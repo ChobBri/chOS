@@ -25,6 +25,5 @@ u32 gpio_pull    (u32 pin_number, u32 value) { return gpio_call(pin_number, valu
 u32 gpio_function(u32 pin_number, u32 value) { return gpio_call(pin_number, value, GPFSEL0, 3, GPIO_MAX_PIN); }
 
 void gpio_useAsAlt5(u32 pin_number) {
-    gpio_pull(pin_number, GPIO_PULL_OFF);
-    gpio_function(pin_number, GPIO_FUNCTION_ALT5);
+
 }

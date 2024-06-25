@@ -5,7 +5,13 @@
 void uart_init();
 void uart_writeText(char *buffer);
 void uart_loadOutputFifo();
+
+u32 uart_isWriteByteReady();
+u32 uart_isReadByteReady();
+
+void uart_writeByte(u8);
 u8 uart_readByte();
-u16 uart_isReadByteReady();
+
 void uart_writeByteBlocking(u8 ch);
-void uart_update();
+u8 uart_readByteBlocking();
+

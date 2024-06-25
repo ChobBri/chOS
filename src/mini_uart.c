@@ -4,6 +4,8 @@
 #include <peripherals/aux.h>
 
 // UART
+#define TXD 14
+#define RXD 15
 
 enum {
     AUX_UART_CLOCK  = 500000000,
@@ -13,29 +15,38 @@ enum {
 #define AUX_MU_BAUD(baud) ((AUX_UART_CLOCK/(baud*8))-1)
 
 void uart_init() {
-    mmio_write(AUX_ENABLES, 1);    //enable UART1
-    mmio_write(AUX_MU_IER_REG, 0);
-    mmio_write(AUX_MU_CNTL_REG, 0);
-    mmio_write(AUX_MU_LCR_REG, 3); //8 bits
-    mmio_write(AUX_MU_MCR_REG, 0);
-    mmio_write(AUX_MU_IER_REG, 0);
-    mmio_write(AUX_MU_IIR_REG, 0xC6); //disable interrupts
-    mmio_write(AUX_MU_BAUD_REG, AUX_MU_BAUD(115200)); // 9600, 115200
-    gpio_useAsAlt5(14);
-    gpio_useAsAlt5(15);
-    mmio_write(AUX_MU_CNTL_REG, 3); //enable RX/TX
+    gpio_pull(TXD, GPIO_PULL_OFF);
+    gpio_function(TXD, GPIO_FUNCTION_ALT5);
+
+    gpio_pull(RXD, GPIO_PULL_OFF);
+    gpio_function(RXD, GPIO_FUNCTION_ALT5);
+
+    mmio_write(AUX_ENABLES, 1);                       // enable UART1
+    mmio_write(AUX_MU_CNTL_REG, 0);                   // disable UART RX/TX
+    mmio_write(AUX_MU_LCR_REG, 3);                    // 8 bits mode
+    mmio_write(AUX_MU_BAUD_REG, AUX_MU_BAUD(115200)); // set baud rate
+    mmio_write(AUX_MU_CNTL_REG, 3);                   // enable UART RX/TX
 }
 
 u32 uart_isWriteByteReady() { return mmio_read(AUX_MU_LSR_REG) & 0x20; }
+u32 uart_isReadByteReady() { return mmio_read(AUX_MU_LSR_REG) & 0x1; }
 
-void uart_writeByteBlockingActual(u8 ch) {
+void uart_writeByte(u8 ch) { mmio_write(AUX_MU_IO_REG, (u32)ch); }
+u8 uart_readByte() { return mmio_read(AUX_MU_IO_REG) & 0xFF; }
+
+void uart_writeByteBlocking(u8 ch) {
     while (!uart_isWriteByteReady()); 
-    mmio_write(AUX_MU_IO_REG, (u32)ch);
+    uart_writeByte(ch);
+}
+
+u8 uart_readByteBlocking() {
+    while (!uart_isReadByteReady());
+    return uart_readByte();
 }
 
 void uart_writeText(char *buffer) {
     while (*buffer) {
-       if (*buffer == '\n') uart_writeByteBlockingActual('\r');
-       uart_writeByteBlockingActual(*buffer++);
+        if (*buffer == '\n') uart_writeByteBlocking('\r');
+        uart_writeByteBlocking(*buffer++);
     }
 }

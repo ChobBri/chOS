@@ -4,6 +4,7 @@
 void main()
 {
     uart_init();
+    uart_writeText("hi mom\nhi dad\n");
     fb_init();
 
     drawRect(150,150,400,400,0x03,0);

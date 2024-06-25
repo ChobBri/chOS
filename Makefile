@@ -24,8 +24,9 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.S
 	$(ARM_GNU_TOOLCHAIN)-gcc $(GCCFLAGS) -c $< -o $@
 
 kernel8.img: $(OBJ_FILES)
-	@echo "Generating kernel8.img for Raspberry PI $(value RPI_VERSION)"
-	@echo ""
+	@echo "-------------------------------------------"
+	@echo " Generating kernel8.img for Raspberry PI $(value RPI_VERSION) "
+	@echo "-------------------------------------------"
 	$(ARM_GNU_TOOLCHAIN)-ld -T linker.ld -nostdlib -o $(BUILD_DIR)/kernel8.elf $(OBJ_FILES) 
 	$(ARM_GNU_TOOLCHAIN)-objcopy -O binary $(BUILD_DIR)/kernel8.elf kernel8.img
 

@@ -2,8 +2,6 @@
 
 #include <types.h>
 
-#define PERIPHERAL_BASE 0xFE000000
-
 void uart_init();
 void uart_writeText(char *buffer);
 void uart_loadOutputFifo();

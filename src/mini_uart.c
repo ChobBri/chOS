@@ -29,7 +29,7 @@ void uart_init() {
 }
 
 u32 uart_isWriteByteReady() { return mmio_read(AUX_MU_LSR_REG) & 0x20; }
-u32 uart_isReadByteReady() { return mmio_read(AUX_MU_LSR_REG) & 0x1; }
+u32 uart_isReadByteReady() { return mmio_read(AUX_MU_LSR_REG) & 0x01; }
 
 void uart_writeByte(u8 ch) { mmio_write(AUX_MU_IO_REG, (u32)ch); }
 u8 uart_readByte() { return mmio_read(AUX_MU_IO_REG) & 0xFF; }

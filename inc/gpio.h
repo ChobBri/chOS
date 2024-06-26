@@ -24,11 +24,11 @@ typedef enum {
     GPIO_PULL_DOWN = 0b10,
 } gpio_pull_t;
 
-u32 gpio_call(u32 pin_number, u32 value, u32 base, u32 field_size, u32 field_max);
+uint32 gpio_call(uint32 pin_number, uint32 value, uint32 base, uint32 field_size, uint32 field_max);
 
-u32 gpio_set     (u32 pin_number, u32 value);
-u32 gpio_clear   (u32 pin_number, u32 value);
-u32 gpio_pull    (u32 pin_number, u32 value);
-u32 gpio_function(u32 pin_number, u32 value);
+uint32 gpio_set     (uint32 pin_number, uint32 value);
+uint32 gpio_clear   (uint32 pin_number, uint32 value);
+uint32 gpio_pull    (uint32 pin_number, uint32 value);
+uint32 gpio_function(uint32 pin_number, uint32 value);
 
-void gpio_useAsAlt5(u32 pin_number);
+void gpio_useAsAlt5(uint32 pin_number);

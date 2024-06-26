@@ -21,7 +21,7 @@ void main()
     // drawLine(100,500,350,700,0x0c);
 
     while (1) {
-        u8 ch = uart_readByteBlocking();
+        uint8 ch = uart_readByteBlocking();
         uart_writeByteBlocking(ch);
         if (ch == '\r')
         {

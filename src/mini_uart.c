@@ -28,18 +28,18 @@ void uart_init() {
     mmio_write(AUX_MU_CNTL_REG, 3);                   // enable UART RX/TX
 }
 
-u32 uart_isWriteByteReady() { return mmio_read(AUX_MU_LSR_REG) & 0x20; }
-u32 uart_isReadByteReady() { return mmio_read(AUX_MU_LSR_REG) & 0x01; }
+uint32 uart_isWriteByteReady() { return mmio_read(AUX_MU_LSR_REG) & 0x20; }
+uint32 uart_isReadByteReady() { return mmio_read(AUX_MU_LSR_REG) & 0x01; }
 
-void uart_writeByte(u8 ch) { mmio_write(AUX_MU_IO_REG, (u32)ch); }
-u8 uart_readByte() { return mmio_read(AUX_MU_IO_REG) & 0xFF; }
+void uart_writeByte(uint8 ch) { mmio_write(AUX_MU_IO_REG, (uint32)ch); }
+uint8 uart_readByte() { return mmio_read(AUX_MU_IO_REG) & 0xFF; }
 
-void uart_writeByteBlocking(u8 ch) {
+void uart_writeByteBlocking(uint8 ch) {
     while (!uart_isWriteByteReady()); 
     uart_writeByte(ch);
 }
 
-u8 uart_readByteBlocking() {
+uint8 uart_readByteBlocking() {
     while (!uart_isReadByteReady());
     return uart_readByte();
 }

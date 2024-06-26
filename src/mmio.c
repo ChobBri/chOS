@@ -1,11 +1,11 @@
 #include <mmio.h>
 
-void mmio_write(u64 reg, u32 val)
+void mmio_write(uint64 reg, uint32 val)
 {
     *(reg32 *)reg = val;
 }
 
-u32 mmio_read(u64 reg)
+uint32 mmio_read(uint64 reg)
 {
     return *(reg32 *)reg;
 }

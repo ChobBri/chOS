@@ -1,10 +1,69 @@
 #include <mini_uart.h>
 #include <fb.h>
+#include <queue.h>
 
 void main()
 {
     uart_init();
-    uart_writeText("hi mom\nhi dad\n");
+    // uart_writeText("-------------------------------------------------------\n");
+    // uart_writeText("-  welcome to                                         -\n");
+    // uart_writeText("-                            _____      _____         -\n");
+    // uart_writeText("-                           /     \\   /     \\       -\n");
+    // uart_writeText("-                          /   __  \\ |   ___//       -\n");
+    // uart_writeText("-                    |     |  || |  |||   \\__        -\n");
+    // uart_writeText("-                __  | _   |  ||_|  |||\____  \\      -\n");
+    // uart_writeText("-               /    |  |   \       //  ___/   ||     -\n");
+    // uart_writeText("-               \__  |  |    \_____//   \_____// !    -\n");
+    // uart_writeText("-------------------------------------------------------\n");
+    uart_writeText("-------------------------------------------------------\n");
+    uart_writeText("-  welcome to                                         -\n");
+    uart_writeText("-                            _____      _____         -\n");
+    uart_writeText("-                           /     \\\\   /     \\\\       -\n");
+    uart_writeText("-                          /   __  \\\\ |   ___//       -\n");
+    uart_writeText("-                    |     |  || |  |||   \\\\__        -\n");
+    uart_writeText("-                __  | _   |  ||_|  || \\____  \\\\      -\n");
+    uart_writeText("-               /    |  |   \\       //  ___/   ||     -\n");
+    uart_writeText("-               \\__  |  |    \\_____//   \\_____// !    -\n");
+    uart_writeText("-------------------------------------------------------\n");
+    uart_writeText("\n");
+    uart_writeText("\n");
+
+    
+    qid16 newq = queue_getNew();
+
+    queue_enqueue(newq, 4);
+    queue_enqueue(newq, 7);
+    pid32 pid;
+    pid = queue_dequeue(newq);
+    uart_writeByteBlocking('0' + pid);
+
+    qid16 newq2 = queue_getNew();
+    queue_enqueue(newq2, 2);
+    queue_enqueue(newq2, 3);
+
+    pid = queue_dequeue(newq);
+    uart_writeByteBlocking('0' + pid);
+
+    pid = queue_dequeue(newq);
+    if (pid == QUEUE_EMPTY) {
+        uart_writeText("queue was empty!");
+    } else {
+        uart_writeText("queue was not empty?");
+    }
+
+    pid = queue_dequeue(newq2);
+    uart_writeByteBlocking('0' + pid);
+
+    pid = queue_dequeue(newq2);
+    uart_writeByteBlocking('0' + pid);
+
+    pid = queue_dequeue(newq2);
+    if (pid == QUEUE_EMPTY) {
+        uart_writeText("queue was empty!");
+    } else {
+        uart_writeText("queue was not empty?");
+    }
+
     // fb_init();
 
     // drawRect(150,150,400,400,0x03,0);

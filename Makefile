@@ -11,7 +11,7 @@ ASM_FILES = $(wildcard $(SRC_DIR)/*.S)
 OBJ_FILES = $(C_FILES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 OBJ_FILES += $(ASM_FILES:$(SRC_DIR)/%.S=$(BUILD_DIR)/%.o)
 
-GCCFLAGS = -Wall -O2 -ffreestanding -nostdlib -nostartfiles -Iinc
+GCCFLAGS = -Wall -O2 -ffreestanding -nostdlib -nostartfiles -Iinc -mgeneral-regs-only
 
 all: kernel8.img
 
@@ -28,6 +28,7 @@ kernel8.img: $(OBJ_FILES)
 	@echo " Generating kernel8.img for Raspberry PI $(value RPI_VERSION) "
 	@echo "-------------------------------------------"
 	$(ARM_GNU_TOOLCHAIN)-ld -T linker.ld -nostdlib -o $(BUILD_DIR)/kernel8.elf $(OBJ_FILES) 
+	# $(ARM_GNU_TOOLCHAIN)-objdump -x $(BUILD_DIR)/kernel8.elf
 	$(ARM_GNU_TOOLCHAIN)-objcopy -O binary $(BUILD_DIR)/kernel8.elf kernel8.img
 
 clean:

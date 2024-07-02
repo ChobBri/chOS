@@ -1,10 +1,30 @@
 #include <mini_uart.h>
 #include <fb.h>
 #include <queue.h>
+#include <memory.h>
+
+void intToWriteBytes(int num) {
+    if (num == 0) {
+        uart_writeByteBlocking('0');
+        return;
+    }
+
+    while (num > 0)
+    {
+        int digit = num % 10;
+        num /= 10;
+        uart_writeByteBlocking('0' + digit);
+    }
+    return;
+}
+
+
 
 void main()
 {
+    mem_init();
     uart_init();
+    
     // uart_writeText("-------------------------------------------------------\n");
     // uart_writeText("-  welcome to                                         -\n");
     // uart_writeText("-                            _____      _____         -\n");
@@ -28,56 +48,62 @@ void main()
     uart_writeText("\n");
     uart_writeText("\n");
 
-    
-    qid16 newq = queue_getNew();
+    struct s {
+        int a;
+    };
 
-    queue_enqueue(newq, 4);
-    queue_enqueue(newq, 7);
-    pid32 pid;
-    pid = queue_dequeue(newq);
-    uart_writeByteBlocking('0' + pid);
+    uart_writeText("=== Testing mem ===\n");
 
-    qid16 newq2 = queue_getNew();
-    queue_enqueue(newq2, 2);
-    queue_enqueue(newq2, 3);
+    uart_writeText("Free list loc: ");
+    uart_writeNum((uint64) (mem_getFreeList()->next));
+    uart_writeText("\n");
 
-    pid = queue_dequeue(newq);
-    uart_writeByteBlocking('0' + pid);
+    uart_writeText("Free list len: ");
+    uart_writeNum((uint64) (mem_getFreeList()->length));
+    uart_writeText("\n");
 
-    pid = queue_dequeue(newq);
-    if (pid == QUEUE_EMPTY) {
-        uart_writeText("queue was empty!");
-    } else {
-        uart_writeText("queue was not empty?");
+    for (int i = 0; i < 10; i++) {
+        struct s *s1 = mem_allocMem(sizeof(struct s));
+        struct s *s2 = mem_allocMem(sizeof(struct s));
+        struct s *s3 = mem_allocMem(sizeof(struct s));
+        mem_freeMem(s1, sizeof(struct s));
+        mem_freeMem(s2, sizeof(struct s));
+        mem_freeMem(s3, sizeof(struct s));
     }
 
-    pid = queue_dequeue(newq2);
-    uart_writeByteBlocking('0' + pid);
-
-    pid = queue_dequeue(newq2);
-    uart_writeByteBlocking('0' + pid);
-
-    pid = queue_dequeue(newq2);
-    if (pid == QUEUE_EMPTY) {
-        uart_writeText("queue was empty!");
-    } else {
-        uart_writeText("queue was not empty?");
+    for (int i = 0; i < 10; i++) {
+        struct s *s1 = mem_allocStack(sizeof(struct s));
+        struct s *s2 = mem_allocStack(sizeof(struct s));
+        struct s *s3 = mem_allocStack(sizeof(struct s));
+        mem_freeStack(s1, sizeof(struct s));
+        mem_freeStack(s2, sizeof(struct s));
+        mem_freeStack(s3, sizeof(struct s));
     }
 
-    // fb_init();
+    for (int i = 0; i < 10; i++) {
+        struct s *s1 = mem_allocStack(sizeof(struct s));
+        struct s *s2 = mem_allocMem(sizeof(struct s));
+        struct s *s3 = mem_allocStack(sizeof(struct s));
+        struct s *s4 = mem_allocMem(sizeof(struct s));
+        struct s *s5 = mem_allocMem(sizeof(struct s));
+        struct s *s6 = mem_allocStack(sizeof(struct s));
+        mem_freeStack(s1, sizeof(struct s));
+        mem_freeMem(s2, sizeof(struct s));
+        mem_freeStack(s3, sizeof(struct s));
+        mem_freeMem(s4, sizeof(struct s));
+        mem_freeMem(s5, sizeof(struct s));
+        mem_freeStack(s6, sizeof(struct s));
+    }
 
-    // drawRect(150,150,400,400,0x03,0);
-    // drawRect(300,300,350,350,0x2e,1);
+    uart_writeText("Free list loc: ");
+    uart_writeNum((uint64) (mem_getFreeList()->next));
+    uart_writeText("\n");
 
-    // drawCircle(960,540,250,0x0e,0);
-    // drawCircle(960,540,50,0x13,1);
+    uart_writeText("Free list len: ");
+    uart_writeNum((uint64) (mem_getFreeList()->length));
+    uart_writeText("\n");
 
-    // drawPixel(250,250,0x0e);
-
-    // drawChar('O',500,500,0x05);
-    // drawString(100,100,"Hello world!",0x0f);
-
-    // drawLine(100,500,350,700,0x0c);
+    uart_writeText("\n");
 
     while (1) {
         uint8 ch = uart_readByteBlocking();

@@ -15,3 +15,4 @@ uint8 uart_readByte();
 void uart_writeByteBlocking(uint8 ch);
 uint8 uart_readByteBlocking();
 
+void uart_writeNum(uint64);

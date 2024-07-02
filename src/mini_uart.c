@@ -50,3 +50,28 @@ void uart_writeText(char *buffer) {
         uart_writeByteBlocking(*buffer++);
     }
 }
+
+void uart_writeNum(uint64 num) {
+    if (num == 0) {
+        uart_writeByteBlocking('0');
+        return;
+    }
+
+    uint64 reverseNum = 0;
+
+    int32 count = 0;
+
+    while (num > 0) {
+        reverseNum *= 10;
+        reverseNum += num % 10;
+        num /= 10;
+        count++;
+    }
+
+    while (count > 0) {
+        uint64 digit = reverseNum % 10;
+        reverseNum /= 10;
+        uart_writeByteBlocking((char)('0' + digit));
+        count--;
+    }
+}

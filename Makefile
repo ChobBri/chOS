@@ -31,5 +31,16 @@ kernel8.img: $(OBJ_FILES)
 	# $(ARM_GNU_TOOLCHAIN)-objdump -x $(BUILD_DIR)/kernel8.elf
 	$(ARM_GNU_TOOLCHAIN)-objcopy -O binary $(BUILD_DIR)/kernel8.elf kernel8.img
 
+armstub/build/armstub.o: armstub/src/armstub.S
+	mkdir -p $(@D)
+	$(ARM_GNU_TOOLCHAIN)-gcc $(GCCFLAGS) -c $< -o $@
+
+armstub: armstub/build/armstub.o
+	$(ARM_GNU_TOOLCHAIN)-ld --section-start=.text=0 -o armstub/build/armstub.elf armstub/build/armstub.o
+	$(ARM_GNU_TOOLCHAIN)-objcopy armstub/build/armstub.elf -O binary armstub-new.bin
+
 clean:
-	rm -rf build *.img > /dev/null 2> /dev/null || true
+	rm -rf build *.img *.bin > /dev/null 2> /dev/null || true
+
+clean_armstub:
+	rm -rf armstub/build *.bin > /dev/null 2> /dev/null || true

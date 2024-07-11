@@ -44,3 +44,7 @@ clean:
 
 clean_armstub:
 	rm -rf armstub/build *.bin > /dev/null 2> /dev/null || true
+
+clean_all:
+	rm -rf build *.img > /dev/null 2> /dev/null || true
+	rm -rf armstub/build *.bin > /dev/null 2> /dev/null || true

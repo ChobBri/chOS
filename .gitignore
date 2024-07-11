@@ -2,6 +2,6 @@ kernel8.img
 armstub-new.bin
 
 build/*
-
+armstub/build/*
 
 .vscode

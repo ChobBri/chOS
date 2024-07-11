@@ -40,7 +40,7 @@ armstub: armstub/build/armstub.o
 	$(ARM_GNU_TOOLCHAIN)-objcopy armstub/build/armstub.elf -O binary armstub-new.bin
 
 clean:
-	rm -rf build *.img *.bin > /dev/null 2> /dev/null || true
+	rm -rf build *.img > /dev/null 2> /dev/null || true
 
 clean_armstub:
 	rm -rf armstub/build *.bin > /dev/null 2> /dev/null || true

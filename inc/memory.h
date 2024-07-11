@@ -4,9 +4,6 @@
 #include <peripherals/base.h>
 #include <status.h>
 
-extern void restore(int32);
-extern int32 disable(void);
-
 #define MEM_BLOCK_SIZE 16 /* bytes */
 
 uint32 mem_ceilMemBlock(uint32);

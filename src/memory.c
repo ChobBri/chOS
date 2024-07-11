@@ -13,13 +13,12 @@ uint32 mem_floorMemBlock(uint32 bytes) {
 }
 
 void *mem_allocMem(uint32 nbytes) {
-    int32 itrmask;
-    itrmask = disable();
+    imask intrMask;
+    intrMask = intr_disable();
     if (nbytes == 0) {
-        restore(itrmask);
+        intr_restore(intrMask);
         return nullptr;
     }
-
 
     nbytes = mem_ceilMemBlock(nbytes);
 
@@ -30,7 +29,7 @@ void *mem_allocMem(uint32 nbytes) {
         if (curr->length == nbytes) {
             prev->next = curr->next;
             m_memFreeList.length -= nbytes;
-            restore(itrmask);
+            intr_restore(intrMask);
             return (void *) curr;
         } else if (curr->length > nbytes) {
             memblk *newMemBlock = (memblk *)((uint64) curr + nbytes);
@@ -38,7 +37,7 @@ void *mem_allocMem(uint32 nbytes) {
             newMemBlock->next = curr->next;
             newMemBlock->length = curr->length - nbytes;
             m_memFreeList.length -= nbytes;
-            restore(itrmask);
+            intr_restore(intrMask);
             return (void *)curr;
         } else {
             prev = curr;
@@ -46,15 +45,15 @@ void *mem_allocMem(uint32 nbytes) {
         }
     }
 
-    restore(itrmask);
+    intr_restore(intrMask);
     return nullptr;
 }
 
 void *mem_allocStack(uint32 nbytes) {
-    int32 itrmask;
-    itrmask = disable();
+    imask intrMask;
+    intrMask = intr_disable();
     if (nbytes == 0) {
-        restore(itrmask);
+        intr_restore(intrMask);
         return nullptr;
     }
 
@@ -76,7 +75,7 @@ void *mem_allocStack(uint32 nbytes) {
     }
 
     if (stkcurr == nullptr) {
-        restore(itrmask);
+        intr_restore(intrMask);
         return nullptr;
     }
 
@@ -90,16 +89,16 @@ void *mem_allocStack(uint32 nbytes) {
     stkcurr = (memblk *)((uint64) stkcurr + nbytes - sizeof(uint64));  // Stack grows downwards
 
     m_memFreeList.length -= nbytes;
-    restore(itrmask);
+    intr_restore(intrMask);
     return stkcurr;
 }
 
 status mem_freeMem(void *blkaddr, uint32 nbytes) {
-    int32 itrmask;
-    itrmask = disable();
+    int64 intrMask;
+    intrMask = intr_disable();
 
     if (nbytes == 0 || blkaddr < mem_getMemMin() || blkaddr >= mem_getMemMax()) {
-        restore(itrmask);
+        intr_restore(intrMask);
         return SYSERR;
     }
 
@@ -118,7 +117,7 @@ status mem_freeMem(void *blkaddr, uint32 nbytes) {
     memblk *newblkEnd = (memblk *)((uint64) newblk + nbytes);
 
     if ((prev != &m_memFreeList && prevEnd > newblk) || (curr != nullptr && newblkEnd > curr)) {
-        restore(itrmask);
+        intr_restore(intrMask);
         return SYSERR;
     }
 
@@ -139,7 +138,7 @@ status mem_freeMem(void *blkaddr, uint32 nbytes) {
         prev->next = newblk->next;
     }
 
-    restore(itrmask);
+    intr_restore(intrMask);
     return OK;
 }
 

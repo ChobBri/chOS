@@ -1,0 +1,197 @@
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+/* base between 2 and 36 */
+char* itoa( int value, char* str, int base )
+{
+    char* rc;
+    char* ptr;
+    char* low;
+    // Check for supported base.
+    if ( base < 2 || base > 36 )
+    {
+        *str = '\0';
+        return str;
+    }
+    ptr = str;
+    rc = str;
+    // Set '-' for negative decimals.
+    if ( value < 0 && base == 10 )
+    {
+        *ptr++ = '-';
+    }
+    // Remember where the numbers start.
+    low = ptr;
+    // The actual conversion.
+    do
+    {
+        // Modulo is negative for negative value. This trick makes abs() unnecessary.
+        *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz"[35 + value % base];
+        value /= base;
+    } while ( value );
+    // Terminating the string.
+    *ptr-- = '\0';
+    // Invert the numbers.
+    while ( low < ptr )
+    {
+        char tmp = *low;
+        *low++ = *ptr;
+        *ptr-- = tmp;
+    }
+    return rc;
+}
+
+/* Hardware text mode color constants. */
+typedef enum {
+	VGA_COLOR_BLACK = 0,
+	VGA_COLOR_BLUE = 1,
+	VGA_COLOR_GREEN = 2,
+	VGA_COLOR_CYAN = 3,
+	VGA_COLOR_RED = 4,
+	VGA_COLOR_MAGENTA = 5,
+	VGA_COLOR_BROWN = 6,
+	VGA_COLOR_LIGHT_GREY = 7,
+	VGA_COLOR_DARK_GREY = 8,
+	VGA_COLOR_LIGHT_BLUE = 9,
+	VGA_COLOR_LIGHT_GREEN = 10,
+	VGA_COLOR_LIGHT_CYAN = 11,
+	VGA_COLOR_LIGHT_RED = 12,
+	VGA_COLOR_LIGHT_MAGENTA = 13,
+	VGA_COLOR_LIGHT_BROWN = 14,
+	VGA_COLOR_WHITE = 15,
+} vga_color;
+
+static inline uint8_t vga_entry_color(vga_color fg, vga_color bg) 
+{
+	return fg | bg << 4;
+}
+
+static inline uint16_t vga_entry(char c, uint8_t color) 
+{
+	return (uint16_t) c | (uint16_t) color << 8;
+}
+
+size_t strlen(const char* str) 
+{
+	size_t len = 0;
+	while (str[len])
+		len++;
+	return len;
+}
+
+static const size_t VGA_WIDTH = 80;
+static const size_t VGA_HEIGHT = 25;
+static const uint32_t VGA_MEMORY_BASE = 0xB8000;
+
+typedef struct {
+    size_t terminal_row;
+    size_t terminal_column;
+    uint8_t terminal_color;
+    uint16_t* terminal_buffer;
+} terminal_state;
+
+static terminal_state state;
+
+void terminal_clear_line(int row) {
+    for (size_t col = 0; col < VGA_WIDTH; col++) {
+        const int index = row * VGA_WIDTH + col;
+        state.terminal_buffer[index] = vga_entry(' ', state.terminal_color);
+    }
+}
+
+void terminal_initialize(void) 
+{
+    /* init fields */
+	state.terminal_row = 0;
+	state.terminal_column = 0;
+	state.terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+	state.terminal_buffer = (uint16_t*) VGA_MEMORY_BASE;
+
+    /* clear screen */
+	for (size_t row = 0; row < VGA_HEIGHT; row++) {
+        terminal_clear_line(row);
+	}
+}
+
+void terminal_setcolor(uint8_t color) 
+{
+	state.terminal_color = color;
+}
+
+void terminal_putentryat(char c, uint8_t color, size_t x, size_t y) 
+{
+	const size_t index = y * VGA_WIDTH + x;
+	state.terminal_buffer[index] = vga_entry(c, color);
+}
+
+
+
+/* positive is scroll text up */
+void terminal_scroll(int scrollAmount) {
+    if (scrollAmount > 0) {
+        for (size_t row = scrollAmount; row < VGA_HEIGHT; row++) {
+            for (size_t col = 0; col < VGA_WIDTH; col++) {
+                const size_t old_index = row * VGA_WIDTH + col;
+                const size_t new_index = (row - scrollAmount) * VGA_WIDTH + col;
+                state.terminal_buffer[new_index] = state.terminal_buffer[old_index];
+            }
+            terminal_clear_line(row);
+        }
+    }
+    else if (scrollAmount < 0) {
+        for (int row = -scrollAmount; row >= 0; row--) {
+            for (size_t col = 0; col < VGA_WIDTH; col++) {
+                const size_t old_index = row * VGA_WIDTH + col;
+                const size_t new_index = (row - scrollAmount) * VGA_WIDTH + col;
+                state.terminal_buffer[new_index] = state.terminal_buffer[old_index];
+            }
+            terminal_clear_line(row);
+        }
+    }
+}
+
+void terminal_putchar(char c) 
+{
+    if (c == '\n') {
+        state.terminal_column = 0;
+        if (++state.terminal_row == VGA_HEIGHT) {
+            state.terminal_row = VGA_HEIGHT - 1;
+            terminal_scroll(1);
+        }
+    }
+    else {
+        terminal_putentryat(c, state.terminal_color, state.terminal_column, state.terminal_row);
+        if (++state.terminal_column == VGA_WIDTH) {
+            state.terminal_column = 0;
+            if (++state.terminal_row == VGA_HEIGHT) {
+                state.terminal_row = VGA_HEIGHT - 1;
+                terminal_scroll(1);
+            }
+        }
+    }
+}
+
+void terminal_write(const char* data, size_t size) 
+{
+	for (size_t i = 0; i < size; i++) {
+		terminal_putchar(data[i]);
+    }
+}
+
+void terminal_writestring(const char* data) 
+{
+	terminal_write(data, strlen(data));
+}
+
+void kernel_main(void) 
+{
+    /* Initialize */
+	terminal_initialize();
+    
+    char num_buffer[33];
+    for (int i = 0; i < 100; i++) {
+        terminal_writestring(itoa(i, num_buffer, 10));
+        terminal_writestring("\n");
+    }
+}

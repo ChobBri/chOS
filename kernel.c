@@ -1,7 +1,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "terminal.h"
 
+#define IDT_SIZE 256
 static inline void outb(uint16_t port, uint8_t val)
 {
     __asm__ volatile ( "outb %b0, %w1" : : "a"(val), "Nd"(port) : "memory");
@@ -10,7 +12,6 @@ static inline void outb(uint16_t port, uint8_t val)
      * The  outb  %al, %dx  encoding is the only option for all other cases.
      * %1 expands to %dx because  port  is a uint16_t.  %w1 could be used if we had the port number a wider C type */
 }
-
 
 static inline uint8_t inb(uint16_t port)
 {
@@ -22,215 +23,6 @@ static inline uint8_t inb(uint16_t port)
     return ret;
 }
 
-/* base between 2 and 36 */
-char* itoa( int value, char* str, int base )
-{
-    char* rc;
-    char* ptr;
-    char* low;
-    // Check for supported base.
-    if ( base < 2 || base > 36 )
-    {
-        *str = '\0';
-        return str;
-    }
-    ptr = str;
-    rc = str;
-    // Set '-' for negative decimals.
-    if ( value < 0 && base == 10 )
-    {
-        *ptr++ = '-';
-    }
-    // Remember where the numbers start.
-    low = ptr;
-    // The actual conversion.
-    do
-    {
-        // Modulo is negative for negative value. This trick makes abs() unnecessary.
-        *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz"[35 + value % base];
-        value /= base;
-    } while ( value );
-    // Terminating the string.
-    *ptr-- = '\0';
-    // Invert the numbers.
-    while ( low < ptr )
-    {
-        char tmp = *low;
-        *low++ = *ptr;
-        *ptr-- = tmp;
-    }
-    return rc;
-}
-
-/* Hardware text mode color constants. */
-typedef enum {
-	VGA_COLOR_BLACK = 0,
-	VGA_COLOR_BLUE = 1,
-	VGA_COLOR_GREEN = 2,
-	VGA_COLOR_CYAN = 3,
-	VGA_COLOR_RED = 4,
-	VGA_COLOR_MAGENTA = 5,
-	VGA_COLOR_BROWN = 6,
-	VGA_COLOR_LIGHT_GREY = 7,
-	VGA_COLOR_DARK_GREY = 8,
-	VGA_COLOR_LIGHT_BLUE = 9,
-	VGA_COLOR_LIGHT_GREEN = 10,
-	VGA_COLOR_LIGHT_CYAN = 11,
-	VGA_COLOR_LIGHT_RED = 12,
-	VGA_COLOR_LIGHT_MAGENTA = 13,
-	VGA_COLOR_LIGHT_BROWN = 14,
-	VGA_COLOR_WHITE = 15,
-} vga_color;
-
-static inline uint8_t vga_entry_color(vga_color fg, vga_color bg) 
-{
-	return fg | bg << 4;
-}
-
-static inline uint16_t vga_entry(char c, uint8_t color) 
-{
-	return (uint16_t) c | (uint16_t) color << 8;
-}
-
-size_t strlen(const char* str) 
-{
-	size_t len = 0;
-	while (str[len])
-		len++;
-	return len;
-}
-
-static const size_t VGA_WIDTH = 80;
-static const size_t VGA_HEIGHT = 25;
-static const uint32_t VGA_MEMORY_BASE = 0xB8000;
-
-typedef struct {
-    size_t terminal_row;
-    size_t terminal_column;
-    uint8_t terminal_color;
-    uint16_t* terminal_buffer;
-} terminal_state;
-
-static terminal_state state;
-
-void terminal_updatecursor(size_t col, size_t row)
-{
-    uint16_t pos = row * VGA_WIDTH + col;
-
-    outb(0x3D4, 0x0F);
-    outb(0x3D5, (uint8_t) (pos & 0xFF));
-    outb(0x3D4, 0x0E);
-    outb(0x3D5, (uint8_t) ((pos >> 8) & 0xFF));
-}
-
-void terminal_clear_line(int row) {
-    for (size_t col = 0; col < VGA_WIDTH; col++) {
-        const int index = row * VGA_WIDTH + col;
-        state.terminal_buffer[index] = vga_entry(' ', state.terminal_color);
-    }
-}
-
-void terminal_initialize(void) 
-{
-    /* init fields */
-	state.terminal_row = 0;
-	state.terminal_column = 0;
-	state.terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
-	state.terminal_buffer = (uint16_t*) VGA_MEMORY_BASE;
-
-    /* clear screen */
-	for (size_t row = 0; row < VGA_HEIGHT; row++) {
-        terminal_clear_line(row);
-	}
-
-    terminal_updatecursor(state.terminal_column, state.terminal_row);
-}
-
-void terminal_setcolor(vga_color fg, vga_color bg) 
-{
-	state.terminal_color = vga_entry_color(fg, bg);
-}
-
-void terminal_putentryat(char c, uint8_t color, size_t x, size_t y) 
-{
-	const size_t index = y * VGA_WIDTH + x;
-	state.terminal_buffer[index] = vga_entry(c, color);
-}
-
-
-/* positive is scroll text up */
-void terminal_scroll(int scrollAmount) {
-    if (scrollAmount > 0) {
-        for (size_t row = scrollAmount; row < VGA_HEIGHT; row++) {
-            for (size_t col = 0; col < VGA_WIDTH; col++) {
-                const size_t old_index = row * VGA_WIDTH + col;
-                const size_t new_index = (row - scrollAmount) * VGA_WIDTH + col;
-                state.terminal_buffer[new_index] = state.terminal_buffer[old_index];
-            }
-            terminal_clear_line(row);
-        }
-    }
-    else if (scrollAmount < 0) {
-        for (int row = -scrollAmount; row >= 0; row--) {
-            for (size_t col = 0; col < VGA_WIDTH; col++) {
-                const size_t old_index = row * VGA_WIDTH + col;
-                const size_t new_index = (row - scrollAmount) * VGA_WIDTH + col;
-                state.terminal_buffer[new_index] = state.terminal_buffer[old_index];
-            }
-            terminal_clear_line(row);
-        }
-    }
-}
-
-void terminal_putchar(char c) 
-{
-    if (c == '\n') {
-        state.terminal_column = 0;
-        if (++state.terminal_row == VGA_HEIGHT) {
-            state.terminal_row = VGA_HEIGHT - 1;
-            terminal_scroll(1);
-        }
-    }
-    else if (c == '\b') {
-        if (state.terminal_column == 0) {
-            if (state.terminal_row > 0) {
-                state.terminal_row--;
-                state.terminal_column = VGA_WIDTH - 1;
-            }
-        }
-        else {
-            state.terminal_column--;
-        }
-        terminal_putentryat(' ', state.terminal_color, state.terminal_column, state.terminal_row);
-    }
-    else {
-        terminal_putentryat(c, state.terminal_color, state.terminal_column, state.terminal_row);
-        if (++state.terminal_column == VGA_WIDTH) {
-            state.terminal_column = 0;
-            if (++state.terminal_row == VGA_HEIGHT) {
-                state.terminal_row = VGA_HEIGHT - 1;
-                terminal_scroll(1);
-            }
-        }
-    }
-    terminal_updatecursor(state.terminal_column, state.terminal_row);
-}
-
-void terminal_write(const char* data, size_t size) 
-{
-	for (size_t i = 0; i < size; i++) {
-		terminal_putchar(data[i]);
-    }
-}
-
-void terminal_writestring(const char* data) 
-{
-	terminal_write(data, strlen(data));
-}
-
-
-#define IDT_SIZE 256
-
 typedef struct {
     uint16_t offset_low;   // Lower 16 bits of handler address
     uint16_t selector;     // Code segment selector
@@ -240,7 +32,6 @@ typedef struct {
 } __attribute__((packed)) idt_entry;
 
 // IDT Descriptor
-
 typedef struct {
     uint16_t limit;       // size in bytes - 1
     uint32_t base;        // start memory location
@@ -295,8 +86,8 @@ void load_idt() {
     asm volatile ("sti");
 }
 
-char scancodeToChar(uint8_t scancode) {
-    static char scancode_to_char[256] = {
+char scancodeToChar(uint8_t scancode, bool shift) {
+    static const char charTable[256] = {
         [0x1E] = 'a', [0x30] = 'b', [0x2E] = 'c', [0x20] = 'd', [0x12] = 'e',
         [0x21] = 'f', [0x22] = 'g', [0x23] = 'h', [0x17] = 'i', [0x24] = 'j',
         [0x25] = 'k', [0x26] = 'l', [0x32] = 'm', [0x31] = 'n', [0x18] = 'o',
@@ -310,19 +101,73 @@ char scancodeToChar(uint8_t scancode) {
         [0x1A] = '[', [0x1B] = ']', [0x27] = ';', [0x28] = '\'', [0x29] = '`',
         [0x2B] = '\\',
     };
+    static const char shiftCharTable[256] = {
+        [0x1E] = 'A', [0x30] = 'B', [0x2E] = 'C', [0x20] = 'D', [0x12] = 'E',
+        [0x21] = 'F', [0x22] = 'G', [0x23] = 'H', [0x17] = 'I', [0x24] = 'J',
+        [0x25] = 'K', [0x26] = 'L', [0x32] = 'M', [0x31] = 'N', [0x18] = 'O',
+        [0x19] = 'P', [0x10] = 'Q', [0x13] = 'R', [0x1f] = 'S', [0x14] = 'T',
+        [0x16] = 'U', [0x2F] = 'V', [0x11] = 'W', [0x2D] = 'X', [0x15] = 'Y',
+        [0x2C] = 'Z',
+        [0x0B] = ')', [0x02] = '!', [0x03] = '@', [0x04] = '#', [0x05] = '$',
+        [0x06] = '%', [0x07] = '^', [0x08] = '&', [0x09] = '*', [0x0A] = '(',
+        [0x1C] = '\n', [0x0F] = '\t', [0x39] = ' ', [0x0E] = '\b',
+        [0x34] = '>', [0x33] = '<', [0x35] = '?', [0x0C] = '_', [0x0D] = '+',
+        [0x1A] = '{', [0x1B] = '}', [0x27] = ':', [0x28] = '"', [0x29] = '~',
+        [0x2B] = '|',
+    };
 
-    return scancode_to_char[scancode];
+    if (shift) {
+        return shiftCharTable[scancode];
+    } else {
+        return charTable[scancode];
+    }
 }
+
+static bool shift = false;
 
 void interrupt_handler(uint8_t irq_num) {
     if (irq_num == 33) {
         uint8_t scancode = inb(0x60);
-        char c = scancodeToChar(scancode);
+
+        if (scancode == 0x2A) {
+            shift = true;
+        } else if (scancode == 0xAA) {
+            shift = false;
+        }
+        char c = scancodeToChar(scancode, shift);
         if (c != '\0') {
             terminal_putchar(c);
         }
     }
 }
+
+/*
+Logo:
+
+Welcome to
+                ___________________
+               /  ____      ______ \
+  _  __ ______/ // __ \   // ____ \ \ 
+         __    // /  \ \ // /   \\_\ \
+        || |  // /    \ \\\ \_____   |
+   ____ || |_ || |     | |\\_____ \  |
+  //  _\||   \\\ \    / /___     \ \ |
+  || |_ || |\ \\\ \__/ /_\\ \____/ / /
+  \\___/||_| \______________________/
+ --------------------------------------
+*/
+static const char* welcomelogo = 
+"Welcome to\n"
+"                ___________________\n"
+"               /  ____      ______ \\\n"
+"  _  __ ______/ // __ \\   // ____ \\ \\ \n"
+"         __    // /  \\ \\ // /   \\\\_\\ \\\n"
+"        || |  // /    \\ \\\\\\ \\_____   |\n"
+"   ____ || |_ || |     | |\\\\_____ \\  |\n"
+"  //  _\\||   \\\\\\ \\    / /___     \\ \\ |\n"
+"  || |_ || |\\ \\\\\\ \\__/ /_\\\\ \\____/ / /\n"
+"  \\\\___/||_| \\______________________/\n"
+" --------------------------------------\n";
 
 void kernel_main(void) 
 {
@@ -330,5 +175,8 @@ void kernel_main(void)
 	terminal_initialize();
     load_idt();
 
+    terminal_writestring("\n");
+    terminal_writestring(welcomelogo);
+    terminal_writestring("\n> ");
     for(;;) {}  // hang for now
 }

@@ -50,6 +50,14 @@ void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags) {
     idt[num].offset_high = (base >> 16) & 0xFFFF; // High 16 bits of ISR address
 }
 
+void set_timer_phase(int hz) {
+    int divisor = 1193182 / hz;
+    outb(0x43, 0x36);       // Set mode: square wave generator
+    outb(0x40, divisor & 0xFF);
+    outb(0x40, divisor >> 8);
+}
+
+extern void irq_stub_32();
 extern void irq_stub_33();
 // Load IDT using inline assembly
 void load_idt() {
@@ -72,14 +80,16 @@ void load_idt() {
         "outb %al, $0x21\n"
         "outb %al, $0xA1\n"
 
-        "movb $0xFD, %al\n"  // Enable IRQ1 keyboard
+        "movb $0xFC, %al\n"  // Enable IRQ1 keyboard
         "outb %al, $0x21\n"
         "movb $0xFF, %al\n"
         "outb %al, $0xA1\n"
     );
     idtr.limit = sizeof(idt) - 1;
     idtr.base = (uint32_t) &idt;
+    set_timer_phase(60);
 
+    idt_set_gate(32, (uint32_t) irq_stub_32, 0x08, 0x8E);
     idt_set_gate(33, (uint32_t) irq_stub_33, 0x08, 0x8E);
     
     asm volatile ("lidt %0" : : "m" (idtr));
@@ -123,21 +133,41 @@ char scancodeToChar(uint8_t scancode, bool shift) {
     }
 }
 
-static bool shift = false;
+
+
+void handleTimerInterrupt(){
+    char num_buffer[33];
+    static int i = 0;
+    i++;
+    terminal_writestring(itoa(i, num_buffer, 10));
+    terminal_putchar('\n');
+}
+
+void handleKeyboardInterrupt(){
+    static bool shift = false;
+    uint8_t scancode = inb(0x60);
+    
+    if (scancode == 0x2A) {
+        shift = true;
+    } else if (scancode == 0xAA) {
+        shift = false;
+    }
+    char c = scancodeToChar(scancode, shift);
+    if (c != '\0') {
+        terminal_putchar(c);
+    }
+}
 
 void interrupt_handler(uint8_t irq_num) {
-    if (irq_num == 33) {
-        uint8_t scancode = inb(0x60);
-
-        if (scancode == 0x2A) {
-            shift = true;
-        } else if (scancode == 0xAA) {
-            shift = false;
-        }
-        char c = scancodeToChar(scancode, shift);
-        if (c != '\0') {
-            terminal_putchar(c);
-        }
+    switch (irq_num) {
+        case 32:
+            handleTimerInterrupt();
+            break;
+        case 33:
+            handleKeyboardInterrupt();
+            break;
+        default:
+            break;
     }
 }
 

@@ -1,11 +1,23 @@
 .align 4
+.global irq_stub_32
+irq_stub_32:
+    pusha
+    movb $32, %al              # IRQ Number (33 - Timer)
+    push %eax
+    call interrupt_handler
+    pop %eax
+    movb $0x20, %al
+    outb %al, $0x20
+    popa
+    iret
+.align 4
 .global irq_stub_33
 irq_stub_33:
     pusha
     movb $33, %al              # IRQ Number (33 - Keyboard)
-    pushl %eax
+    push %eax
     call interrupt_handler
-    add $4, %esp
+    pop %eax
     movb $0x20, %al
     outb %al, $0x20
     popa

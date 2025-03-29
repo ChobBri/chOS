@@ -76,6 +76,9 @@ _start:
 	runtime support to work as well.
 	*/
 
+    call setup_gdt
+reload_cs:
+
 	/*
 	Enter the high-level kernel. The ABI requires the stack is 16-byte
 	aligned at the time of the call instruction (which afterwards pushes
@@ -107,3 +110,29 @@ Set the size of the _start symbol to the current location '.' minus its start.
 This is useful when debugging or when you implement call tracing.
 */
 .size _start, . - _start
+
+.section .data
+gdt_descriptor:
+    .word gdt_end - gdt_start - 1   # GDT size (limit)
+    .long gdt_start
+
+gdt_start:
+    .quad 0                         # Null Descriptor
+    .quad 0x00CF9A000000FFFF        # Code Segment (Base=0, Limit=0xFFFFF, Flags=0x9A)
+    .quad 0x00CF92000000FFFF        # Data Segment (Base=0, Limit=0xFFFFF, Flags=0x92)
+gdt_end:
+
+.code32
+setup_gdt:
+    lgdt gdt_descriptor   # Load GDT
+
+    # Reload segment registers
+    mov $0x10, %ax        # Data segment selector (offset 0x10 (3rd entry) in GDT)
+    mov %ax, %ds
+    mov %ax, %es
+    mov %ax, %fs
+    mov %ax, %gs
+    mov %ax, %ss
+
+    # Reload CS using a far jump
+    ljmp $0x08, $reload_cs  # Code Segment selector (offset 0x08 (2nd entry) in GDT)

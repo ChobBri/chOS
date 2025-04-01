@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "terminal.h"
+#include "gdt.h"
 
 #define IDT_SIZE 256
 static inline void outb(uint16_t port, uint8_t val)
@@ -202,11 +203,11 @@ static const char* welcomelogo =
 void kernel_main(void) 
 {
     /* Initialize */
-	terminal_initialize();
-    load_idt();
-
+	setup_gdt32();
+    terminal_initialize();
     terminal_writestring("\n");
     terminal_writestring(welcomelogo);
     terminal_writestring("\n> ");
+    load_idt();
     for(;;) {}  // hang for now
 }

@@ -76,8 +76,7 @@ _start:
 	runtime support to work as well.
 	*/
 
-    call setup_gdt
-reload_cs:
+    // Load gdt after entering kernel
 
 	/*
 	Enter the high-level kernel. The ABI requires the stack is 16-byte
@@ -111,20 +110,24 @@ This is useful when debugging or when you implement call tracing.
 */
 .size _start, . - _start
 
-.section .data
-gdt_descriptor:
-    .word gdt_end - gdt_start - 1   # GDT size (limit)
-    .long gdt_start
-
-gdt_start:
-    .quad 0                         # Null Descriptor
-    .quad 0x00CF9A000000FFFF        # Code Segment (Base=0, Limit=0xFFFFF, Flags=0x9A)
-    .quad 0x00CF92000000FFFF        # Data Segment (Base=0, Limit=0xFFFFF, Flags=0x92)
-gdt_end:
-
 .code32
-setup_gdt:
-    lgdt gdt_descriptor   # Load GDT
+/* First arg: address of gdtr */
+.global load_gdt
+load_gdt:
+    cli
+    push %ebp
+    mov %esp, %ebp
+    mov 8(%ebp), %eax  # get gdtr
+    lgdt (%eax)   # Load GDT
+    pop %ebp
+    ret
+
+.global switch_to_32bit_protected
+switch_to_32bit_protected:
+    cli
+    mov %cr0, %eax 
+    or $0x1, %al       # set PE (Protection Enable) bit in CR0 (Control Register 0)
+    mov %eax, %cr0
 
     # Reload segment registers
     mov $0x10, %ax        # Data segment selector (offset 0x10 (3rd entry) in GDT)
@@ -135,4 +138,6 @@ setup_gdt:
     mov %ax, %ss
 
     # Reload CS using a far jump
-    ljmp $0x08, $reload_cs  # Code Segment selector (offset 0x08 (2nd entry) in GDT)
+    ljmp $0x08, $reload_cs32  # Code Segment selector (offset 0x08 (2nd entry) in GDT)
+reload_cs32:
+    ret

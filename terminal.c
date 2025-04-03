@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include "terminal.h"
 #include "vga.h"
+#include "string.h"
 
 static inline void outb(uint16_t port, uint8_t val)
 {
@@ -72,13 +73,6 @@ char* itoa( int value, char* str, int base )
     return rc;
 }
 
-size_t strlen(const char* str) 
-{
-	size_t len = 0;
-	while (str[len])
-		len++;
-	return len;
-}
 
 void terminal_updatecursor(size_t col, size_t row)
 {

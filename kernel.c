@@ -4,6 +4,7 @@
 #include "keycode.h"
 #include "terminal.h"
 #include "gdt.h"
+#include "string.h"
 
 #define IDT_SIZE 256
 static inline void outb(uint16_t port, uint8_t val)
@@ -196,6 +197,11 @@ void kernel_main(void)
     terminal_writestring("\n");
     terminal_writestring(welcomelogo);
     terminal_writestring("\n> ");
+    char buf[200] = "I can't believe ";
+    char buf2[200];
+    char cpy[200] = "it's not butter.";
+
+    terminal_writestring(strncat(buf, strncpy(buf2, cpy, 200), 200));
     load_idt();
     for(;;) {}  // hang for now
 }

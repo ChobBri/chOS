@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "keycode.h"
 #include "terminal.h"
 #include "gdt.h"
 
@@ -97,64 +98,51 @@ void load_idt() {
     asm volatile ("sti");
 }
 
-char scancodeToChar(uint8_t scancode, bool shift) {
-    static const char charTable[256] = {
-        [0x1E] = 'a', [0x30] = 'b', [0x2E] = 'c', [0x20] = 'd', [0x12] = 'e',
-        [0x21] = 'f', [0x22] = 'g', [0x23] = 'h', [0x17] = 'i', [0x24] = 'j',
-        [0x25] = 'k', [0x26] = 'l', [0x32] = 'm', [0x31] = 'n', [0x18] = 'o',
-        [0x19] = 'p', [0x10] = 'q', [0x13] = 'r', [0x1f] = 's', [0x14] = 't',
-        [0x16] = 'u', [0x2F] = 'v', [0x11] = 'w', [0x2D] = 'x', [0x15] = 'y',
-        [0x2C] = 'z',
-        [0x0B] = '0', [0x02] = '1', [0x03] = '2', [0x04] = '3', [0x05] = '4',
-        [0x06] = '5', [0x07] = '6', [0x08] = '7', [0x09] = '8', [0x0A] = '9',
-        [0x1C] = '\n', [0x0F] = '\t', [0x39] = ' ', [0x0E] = '\b',
-        [0x34] = '.', [0x33] = ',', [0x35] = '/', [0x0C] = '-', [0x0D] = '=',
-        [0x1A] = '[', [0x1B] = ']', [0x27] = ';', [0x28] = '\'', [0x29] = '`',
-        [0x2B] = '\\',
-    };
-    static const char shiftCharTable[256] = {
-        [0x1E] = 'A', [0x30] = 'B', [0x2E] = 'C', [0x20] = 'D', [0x12] = 'E',
-        [0x21] = 'F', [0x22] = 'G', [0x23] = 'H', [0x17] = 'I', [0x24] = 'J',
-        [0x25] = 'K', [0x26] = 'L', [0x32] = 'M', [0x31] = 'N', [0x18] = 'O',
-        [0x19] = 'P', [0x10] = 'Q', [0x13] = 'R', [0x1f] = 'S', [0x14] = 'T',
-        [0x16] = 'U', [0x2F] = 'V', [0x11] = 'W', [0x2D] = 'X', [0x15] = 'Y',
-        [0x2C] = 'Z',
-        [0x0B] = ')', [0x02] = '!', [0x03] = '@', [0x04] = '#', [0x05] = '$',
-        [0x06] = '%', [0x07] = '^', [0x08] = '&', [0x09] = '*', [0x0A] = '(',
-        [0x1C] = '\n', [0x0F] = '\t', [0x39] = ' ', [0x0E] = '\b',
-        [0x34] = '>', [0x33] = '<', [0x35] = '?', [0x0C] = '_', [0x0D] = '+',
-        [0x1A] = '{', [0x1B] = '}', [0x27] = ':', [0x28] = '"', [0x29] = '~',
-        [0x2B] = '|',
-    };
-
-    if (shift) {
-        return shiftCharTable[scancode];
-    } else {
-        return charTable[scancode];
-    }
-}
-
-
-
 void handleTimerInterrupt(){
-    char num_buffer[33];
-    static int i = 0;
-    i++;
-    terminal_writestring(itoa(i, num_buffer, 10));
-    terminal_putchar('\n');
+    // char num_buffer[33];
+    // static int i = 0;
+    // i++;
+    // terminal_writestring(itoa(i, num_buffer, 10));
+    // terminal_putchar('\n');
 }
 
 void handleKeyboardInterrupt(){
     static bool shift = false;
+    static bool capslock = false;
+    static bool e0 = false;
     uint8_t scancode = inb(0x60);
+
+    if (scancode == 0xe0) {
+        e0 = true;
+        return;
+    }
     
-    if (scancode == 0x2A) {
+    
+    keycode kc;
+    bool pressed;
+
+    if (!e0) {
+        kc = scancodeToKeycode(scancode);
+        pressed = scancodeToPressed(scancode);
+    }
+    else {
+        kc = scancodeToKeycode2(scancode);
+        pressed = scancodeToPressed2(scancode);
+    }
+    e0 = false;
+    
+    if (pressed && (kc == LeftShift || kc == RightShift)) {
         shift = true;
-    } else if (scancode == 0xAA) {
+    } else if (!pressed && (kc == LeftShift || kc == RightShift)) {
         shift = false;
     }
-    char c = scancodeToChar(scancode, shift);
-    if (c != '\0') {
+
+    if (pressed && kc == CapsLock) {
+        capslock = !capslock;
+    }
+
+    char c = keycodeToChar(kc, shift ^ capslock);
+    if (c != '\0' && pressed) {
         terminal_putchar(c);
     }
 }

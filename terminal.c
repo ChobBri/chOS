@@ -192,9 +192,6 @@ void terminal_scroll(int scrollAmount) {
 
 void terminal_putchar(char c) 
 {
-    static vga_color fg = 0;
-    static vga_color bg = 8;
-    terminal_setcolor(fg++, bg++);
     if (c == '\n') {
         state.line_len[state.row_pos] = state.col_pos;
         state.col_pos = 0;

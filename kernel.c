@@ -5,26 +5,10 @@
 #include "terminal.h"
 #include "gdt.h"
 #include "string.h"
+#include "x86.h"
+#include "vga.h"
 
 #define IDT_SIZE 256
-static inline void outb(uint16_t port, uint8_t val)
-{
-    __asm__ volatile ( "outb %b0, %w1" : : "a"(val), "Nd"(port) : "memory");
-    /* There's an outb %al, $imm8 encoding, for compile-time constant port numbers that fit in 8b. (N constraint).
-     * Wider immediate constants would be truncated at assemble-time (e.g. "i" constraint).
-     * The  outb  %al, %dx  encoding is the only option for all other cases.
-     * %1 expands to %dx because  port  is a uint16_t.  %w1 could be used if we had the port number a wider C type */
-}
-
-static inline uint8_t inb(uint16_t port)
-{
-    uint8_t ret;
-    __asm__ volatile ( "inb %w1, %b0"
-                   : "=a"(ret)
-                   : "Nd"(port)
-                   : "memory");
-    return ret;
-}
 
 typedef struct {
     uint16_t offset_low;   // Lower 16 bits of handler address
@@ -193,15 +177,14 @@ void kernel_main(void)
 {
     /* Initialize */
 	setup_gdt32();
-    terminal_initialize();
-    terminal_writestring("\n");
-    terminal_writestring(welcomelogo);
-    terminal_writestring("\n> ");
-    char buf[200] = "I can't believe ";
-    char buf2[200];
-    char cpy[200] = "it's not butter.";
 
-    terminal_writestring(strncat(buf, strncpy(buf2, cpy, 200), 200));
+    terminal_init_mode13();
     load_idt();
+    (void) welcomelogo;  // TODO: create new logo for vga 256
+
+    for (int i = 0;; i++) {
+
+        ((uint8_t*)0xA0000)[i % (320 * 200)] = ((i / (320 * 8)) % 64);
+    }
     for(;;) {}  // hang for now
 }

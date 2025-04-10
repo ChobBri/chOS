@@ -27,6 +27,17 @@ typedef enum {
 	VGA_COLOR_WHITE = 15,
 } vga_color;
 
+uint8_t vga_read_atrb_reg(uint8_t index);
+void vga_write_atrb_reg(uint8_t index, uint8_t data);
+uint8_t vga_read_misc_output_reg();
+void vga_write_misc_output_reg(uint8_t data);
+uint8_t vga_read_gfx_reg(uint8_t index);
+void vga_write_gfx_reg(uint8_t index, uint8_t data);
+uint8_t vga_read_seq_reg(uint8_t index);
+void vga_write_seq_reg(uint8_t index, uint8_t data);
+uint8_t vga_read_crt_ctrl_reg(uint8_t index);
+void vga_write_crt_ctrl_reg(uint8_t index, uint8_t data);
+
 static inline uint8_t vga_entry_color(vga_color fg, vga_color bg) 
 {
 	return fg | bg << 4;

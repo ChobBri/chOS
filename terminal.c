@@ -33,6 +33,116 @@ typedef struct {
 
 static terminal_state state;
 
+void terminal_init_mode3() {
+    vga_write_atrb_reg(0x10, 0x0C);
+    vga_write_atrb_reg(0x11, 0x00);
+    vga_write_atrb_reg(0x12, 0x0F);
+    vga_write_atrb_reg(0x13, 0x08);
+    vga_write_atrb_reg(0x14, 0x00);
+
+    vga_write_misc_output_reg(0x67);
+
+    vga_write_seq_reg(0x01, 0x00);
+    vga_write_seq_reg(0x03, 0x00);
+    vga_write_seq_reg(0x04, 0x07);
+
+    vga_write_gfx_reg(0x05, 0x10);
+    vga_write_gfx_reg(0x06, 0x0E);
+
+    vga_write_crt_ctrl_reg(0x00, 0x5F);
+    vga_write_crt_ctrl_reg(0x01, 0x4F);
+    vga_write_crt_ctrl_reg(0x02, 0x50);
+    vga_write_crt_ctrl_reg(0x03, 0x82);
+    vga_write_crt_ctrl_reg(0x04, 0x55);
+    vga_write_crt_ctrl_reg(0x05, 0x81);
+    vga_write_crt_ctrl_reg(0x06, 0xBF);
+    vga_write_crt_ctrl_reg(0x07, 0x1F);
+    vga_write_crt_ctrl_reg(0x08, 0x00);
+    vga_write_crt_ctrl_reg(0x09, 0x4F);
+    vga_write_crt_ctrl_reg(0x10, 0x9C);
+    vga_write_crt_ctrl_reg(0x11, 0x8E);
+    vga_write_crt_ctrl_reg(0x12, 0x8F);
+    vga_write_crt_ctrl_reg(0x13, 0x28);
+    vga_write_crt_ctrl_reg(0x14, 0x1F);
+    vga_write_crt_ctrl_reg(0x15, 0x96);
+    vga_write_crt_ctrl_reg(0x16, 0xB9);
+    vga_write_crt_ctrl_reg(0x17, 0xA3);
+}
+
+void terminal_init_mode13() {
+    vga_write_misc_output_reg(0x63);
+    
+    vga_write_seq_reg(0x00, 0x03);
+    vga_write_seq_reg(0x01, 0x01);
+    vga_write_seq_reg(0x02, 0x0F);
+    vga_write_seq_reg(0x03, 0x00);
+    vga_write_seq_reg(0x04, 0x0E);
+
+    vga_write_atrb_reg(0x00, 0x00);
+    vga_write_atrb_reg(0x01, 0x01);
+    vga_write_atrb_reg(0x02, 0x02);
+    vga_write_atrb_reg(0x03, 0x03);
+    vga_write_atrb_reg(0x04, 0x04);
+    vga_write_atrb_reg(0x05, 0x05);
+    vga_write_atrb_reg(0x06, 0x06);
+    vga_write_atrb_reg(0x07, 0x07);
+    vga_write_atrb_reg(0x08, 0x08);
+    vga_write_atrb_reg(0x09, 0x09);
+    vga_write_atrb_reg(0x0A, 0x0A);
+    vga_write_atrb_reg(0x0B, 0x0B);
+    vga_write_atrb_reg(0x0C, 0x0C);
+    vga_write_atrb_reg(0x0D, 0x0D);
+    vga_write_atrb_reg(0x0E, 0x0E);
+    vga_write_atrb_reg(0x0F, 0x0F);
+
+    vga_write_atrb_reg(0x10, 0x41);
+    vga_write_atrb_reg(0x11, 0x00);
+    vga_write_atrb_reg(0x12, 0x0F);
+    vga_write_atrb_reg(0x13, 0x00);
+    vga_write_atrb_reg(0x14, 0x00);
+    
+
+
+    vga_write_gfx_reg(0x00, 0x00);
+    vga_write_gfx_reg(0x01, 0x00);
+    vga_write_gfx_reg(0x02, 0x00);
+    vga_write_gfx_reg(0x03, 0x00);
+    vga_write_gfx_reg(0x04, 0x00);
+    vga_write_gfx_reg(0x05, 0x40);
+    vga_write_gfx_reg(0x06, 0x05);
+    vga_write_gfx_reg(0x07, 0x0F);
+    vga_write_gfx_reg(0x08, 0xFF);
+
+    vga_write_crt_ctrl_reg(0x03, vga_read_crt_ctrl_reg(0x03) | 0x80);
+    vga_write_crt_ctrl_reg(0x11, vga_read_crt_ctrl_reg(0x11) & ~0x80);
+
+    vga_write_crt_ctrl_reg(0x00, 0x5F);
+    vga_write_crt_ctrl_reg(0x01, 0x4F);
+    vga_write_crt_ctrl_reg(0x02, 0x50);
+    vga_write_crt_ctrl_reg(0x03, 0x82);
+    vga_write_crt_ctrl_reg(0x04, 0x54);
+    vga_write_crt_ctrl_reg(0x05, 0x80);
+    vga_write_crt_ctrl_reg(0x06, 0xBF);
+    vga_write_crt_ctrl_reg(0x07, 0x1F);
+    vga_write_crt_ctrl_reg(0x08, 0x00);
+    vga_write_crt_ctrl_reg(0x09, 0x41);
+    vga_write_crt_ctrl_reg(0x0A, 0x00);
+    vga_write_crt_ctrl_reg(0x0B, 0x00);
+    vga_write_crt_ctrl_reg(0x0C, 0x00);
+    vga_write_crt_ctrl_reg(0x0D, 0x00);
+    vga_write_crt_ctrl_reg(0x0E, 0x00);
+    vga_write_crt_ctrl_reg(0x0F, 0x00);
+    vga_write_crt_ctrl_reg(0x10, 0x9C);
+    vga_write_crt_ctrl_reg(0x11, 0x8E);
+    vga_write_crt_ctrl_reg(0x12, 0x8F);
+    vga_write_crt_ctrl_reg(0x13, 0x28);
+    vga_write_crt_ctrl_reg(0x14, 0x40);
+    vga_write_crt_ctrl_reg(0x15, 0x96);
+    vga_write_crt_ctrl_reg(0x16, 0xB9);
+    vga_write_crt_ctrl_reg(0x17, 0xA3);
+    vga_write_crt_ctrl_reg(0x18, 0xFF);
+}
+
 /* base between 2 and 36 */
 char* itoa( int value, char* str, int base )
 {

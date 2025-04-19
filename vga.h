@@ -99,9 +99,9 @@ static constexpr uint16_t INPUT_STATUS_REG0 = 0x3C2;
 static constexpr uint16_t INPUT_STATUS_MONO_REG1 = 0x3BA;
 static constexpr uint16_t INPUT_STATUS_COLOR_REG1 = 0x3DA;
 
-#define VGA_WIDTH 80
-#define VGA_HEIGHT 25
-#define VGA_MEMORY_BASE 0xB8000
+static constexpr int VGA_WIDTH = 80;
+static constexpr int VGA_HEIGHT = 25;
+static constexpr int VGA_MEMORY_BASE = 0xB8000;
 
 /* Hardware text mode color constants. */
 typedef enum {
@@ -121,7 +121,7 @@ typedef enum {
 	VGA_COLOR_LIGHT_MAGENTA = 13,
 	VGA_COLOR_LIGHT_BROWN = 14,
 	VGA_COLOR_WHITE = 15,
-} color;
+} vga_color;
 
 uint8_t read_atrb_reg(uint8_t index);
 void write_atrb_reg(uint8_t index, uint8_t data);
@@ -134,7 +134,7 @@ void write_seq_reg(uint8_t index, uint8_t data);
 uint8_t read_crt_ctrl_reg(uint8_t index);
 void write_crt_ctrl_reg(uint8_t index, uint8_t data);
 
-static inline uint8_t entry_color(vga::color fg, vga::color bg) 
+static inline uint8_t entry_color(vga_color fg, vga_color bg) 
 {
 	return fg | bg << 4;
 }

@@ -8,7 +8,7 @@
 #include "x86.h"
 #include "vga.h"
 
-#define IDT_SIZE 256
+static constexpr int IDT_SIZE = 256;
 
 typedef struct {
     uint16_t offset_low;   // Lower 16 bits of handler address

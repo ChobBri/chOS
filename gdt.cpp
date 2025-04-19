@@ -37,7 +37,7 @@ typedef struct {
 
 gdt_descriptor gdtr;
 
-#define GDT_LEN 5
+static constexpr int GDT_LEN = 5;
 gdt_segment_descriptor_complex gdt[GDT_LEN];
 const gdt_segment_descriptor gdt_entries[GDT_LEN] = {
     {  // NULL_DESCRIPTOR

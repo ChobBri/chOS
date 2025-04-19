@@ -5,6 +5,7 @@
 #include "string.h"
 
 namespace terminal {
+using namespace vga;
 
 static inline void outb(uint16_t port, uint8_t val)
 {
@@ -225,7 +226,7 @@ void initialize(void)
     updatecursor(state.col_pos, state.row_pos);
 }
 
-void setcolor(vga::color fg, vga::color bg) 
+void setcolor(vga::vga_color fg, vga::vga_color bg) 
 {
 	state.color = vga::entry_color(fg, bg);
 }

@@ -16188,7 +16188,7 @@ extern "C"
 void kernel_main(void) 
 {
     /* Initialize */
-	gdt::setup_gdt32();
+	setup_gdt32();
 
     terminal::init_mode13();
     load_idt();

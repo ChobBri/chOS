@@ -2,7 +2,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-namespace gdt {
 typedef struct {
     uint16_t size;
     uint32_t base;
@@ -163,6 +162,4 @@ void setup_gdt32(void) {
     gdtr.size = sizeof(gdt_segment_descriptor_complex) * GDT_LEN - 1;
     load_gdt(&gdtr);
     switch_to_32bit_protected();
-}
-
 }

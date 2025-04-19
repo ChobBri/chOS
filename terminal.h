@@ -3,10 +3,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+namespace terminal {
 char* itoa( int value, char* str, int base );
-void terminal_init_mode3();
-void terminal_init_mode13();
-void terminal_initialize(void);
-void terminal_writestring(const char* data);
-void terminal_write(const char* data, size_t size);
-void terminal_putchar(char c);
+void init_mode3();
+void init_mode13();
+void initialize(void);
+void writestring(const char* data);
+void write(const char* data, size_t size);
+void putchar(char c);
+}

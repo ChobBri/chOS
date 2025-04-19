@@ -44,8 +44,8 @@ void set_timer_phase(int hz) {
     outb(0x40, divisor >> 8);
 }
 
-extern void irq_stub_32();
-extern void irq_stub_33();
+extern "C" void irq_stub_32();
+extern "C" void irq_stub_33();
 // Load IDT using inline assembly
 void load_idt() {
     asm volatile(
@@ -102,7 +102,6 @@ void handleKeyboardInterrupt(){
         return;
     }
     
-    
     keycode kc;
     bool pressed;
 
@@ -128,10 +127,11 @@ void handleKeyboardInterrupt(){
 
     char c = keycodeToChar(kc, shift ^ capslock);
     if (c != '\0' && pressed) {
-        terminal_putchar(c);
+        terminal::putchar(c);
     }
 }
 
+extern "C"
 void interrupt_handler(uint8_t irq_num) {
     switch (irq_num) {
         case 32:
@@ -16184,12 +16184,13 @@ void putpixel(int row, int col, uint8_t r, uint8_t g, uint8_t b) {
     ((uint8_t*)0xA0000)[row * 320 + col] = b * 32  + g * 8 + r;
 }
 
+extern "C"
 void kernel_main(void) 
 {
     /* Initialize */
-	setup_gdt32();
+	gdt::setup_gdt32();
 
-    terminal_init_mode13();
+    terminal::init_mode13();
     load_idt();
     (void) welcomelogo;  // TODO: create new logo for vga 256
 

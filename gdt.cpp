@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+namespace gdt {
 typedef struct {
     uint16_t size;
     uint32_t base;
@@ -152,8 +153,8 @@ gdt_segment_descriptor_complex encodeGdtEntry(const gdt_segment_descriptor sourc
     return gdt_entry;
 }
 
-extern void load_gdt(gdt_descriptor* gdtr);
-extern void switch_to_32bit_protected();
+extern "C" void load_gdt(gdt_descriptor* gdtr);
+extern "C" void switch_to_32bit_protected();
 void setup_gdt32(void) {
     for (int i = 0; i < GDT_LEN; i++) {
         gdt[i] = encodeGdtEntry(gdt_entries[i]);
@@ -164,3 +165,4 @@ void setup_gdt32(void) {
     switch_to_32bit_protected();
 }
 
+}

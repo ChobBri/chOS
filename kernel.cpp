@@ -16191,18 +16191,15 @@ void kernel_main(void)
     load_idt();
     (void) welcomelogo;
 
-    for (int i = 0;;i++) {
-        for (int row = 0; row < 200; row++) {
-            for (int col = 0; col < 320; col++) {
-                int index = row * 320 + col;
-                int r = chOS_logo[index * 3];
-                int g = chOS_logo[index * 3 + 1];
-                int b = chOS_logo[index * 3 + 2];
-                screen::putpixel(row, col, r, g, b);
-            }
+    for (int row = 0; row < 200; row++) {
+        for (int col = 0; col < 320; col++) {
+            int index = row * 320 + col;
+            int r = chOS_logo[index * 3];
+            int g = chOS_logo[index * 3 + 1];
+            int b = chOS_logo[index * 3 + 2];
+            screen::putpixel(col, row, r, g, b);
         }
     }
-
 
     for(;;) {}  // hang for now
 }

@@ -1,6 +1,7 @@
 #include "screen.h"
 #include <cstdint>
 #include "vga.h"
+#include "math.h"
 
 namespace screen {
 
@@ -102,11 +103,33 @@ int height() {
     return screen_height;
 }
 
-void putpixel(int row, int col, uint8_t r, uint8_t g, uint8_t b) {
+void putpixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     r = r / 32;
     g = g / 64;
     b = b / 32;
-    ((uint8_t*)0xA0000)[row * screen_width + col] = b * 32  + g * 8 + r;
+    ((uint8_t*)0xA0000)[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
+}
+
+void drawline(int x0, int y0, int x1, int y1, uint8_t r, uint8_t g, uint8_t b) {
+    r = r / 32;
+    g = g / 64;
+    b = b / 32;
+
+    int dx = x1 - x0;
+    int dy = y1 - y0;
+    
+    if (dx == 0) {
+        for (int y = y0; y <= y1; y++) {
+            ((uint8_t*)0xA0000)[y * screen_width + x0] = b * (8 * 4)  + g * 8 + r;
+        }
+    }
+    
+    float m = dy / (float) dx;
+    
+    for (int x = x0; x <= x1; x++) {
+        int y = round(m * (x - x0)) + y0;
+        ((uint8_t*)0xA0000)[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
+    }
 }
 
 }

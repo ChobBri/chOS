@@ -32,3 +32,21 @@ float invSqrt(float x) {
     u.x = u.x * (1.5f - xhalf * u.x * u.x);
     return u.x;
 }
+
+int round(float x) {
+    if (x > 0.0f) {
+        x += 0.5f;
+        return (int) x;
+    }
+    else {
+        x -= 0.5f;
+        return (int) x;
+    }
+}
+
+int abs(int x) {
+    if (x < 0) {
+        return -x;
+    }
+    return x;
+}

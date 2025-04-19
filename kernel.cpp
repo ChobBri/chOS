@@ -8,6 +8,7 @@
 #include "x86.h"
 #include "vga.h"
 #include "vec2.h"
+#include "screen.h"
 
 static constexpr int IDT_SIZE = 256;
 
@@ -16178,12 +16179,7 @@ unsigned char chOS_logo[320 * 200 * 3] = {
 };
 
 
-void putpixel(int row, int col, uint8_t r, uint8_t g, uint8_t b) {
-    r = r / 32;
-    g = g / 64;
-    b = b / 32;
-    ((uint8_t*)0xA0000)[row * 320 + col] = b * 32  + g * 8 + r;
-}
+
 
 extern "C"
 void kernel_main(void) 
@@ -16191,17 +16187,9 @@ void kernel_main(void)
     /* Initialize */
 	setup_gdt32();
 
-    terminal::init_mode13();
+    screen::init();
     load_idt();
-    (void) welcomelogo;  // TODO: create new logo for vga 256
-
-    /* load color palette */
-    for (int i = 0; i < 256; i++) {
-        outb(vga::DAC_ADDR_WRITE_MODE_REG, i);
-        outb(vga::DAC_ADDR_DATA_REG, (i & 0x7) * 9);
-        outb(vga::DAC_ADDR_DATA_REG, ((i >> 3) & 0x3) * 21);
-        outb(vga::DAC_ADDR_DATA_REG, ((i >> 5) & 0x7) * 9);
-    }
+    (void) welcomelogo;
 
     for (int i = 0;;i++) {
         for (int row = 0; row < 200; row++) {
@@ -16210,10 +16198,9 @@ void kernel_main(void)
                 int r = chOS_logo[index * 3];
                 int g = chOS_logo[index * 3 + 1];
                 int b = chOS_logo[index * 3 + 2];
-                putpixel(row, col, r, g, b);
+                screen::putpixel(row, col, r, g, b);
             }
         }
-
     }
 
 

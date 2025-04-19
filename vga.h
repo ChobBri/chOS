@@ -28,29 +28,29 @@ static constexpr uint16_t SEQ_IDX_CHAR_MAP_SEL_REG = 0x3;
 static constexpr uint16_t SEQ_IDX_SEQ_MEM_MODE_REG = 0x4;
 
 /* Attribute Controller Registers */
-static constexpr uint16_t ATTR_CTRL_ADDR_DATA_REG = 0x3C0;
-static constexpr uint16_t ATTR_CTRL_DATA_READ_REG = 0x3C1;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG0 = 0x0;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG1 = 0x1;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG2 = 0x2;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG3 = 0x3;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG4 = 0x4;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG5 = 0x5;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG6 = 0x6;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG7 = 0x7;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG8 = 0x8;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG9 = 0x9;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG10 = 0xA;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG11 = 0xB;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG12 = 0xC;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG13 = 0xD;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG14 = 0xE;
-static constexpr uint16_t ATTR_CTRL_IDX_PALET_REG15 = 0xF;
-static constexpr uint16_t ATTR_CTRL_IDX_ATTR_MODE_CTRL_REG = 0x10;
-static constexpr uint16_t ATTR_CTRL_IDX_OVERSCAN_COLOR_REG = 0x11;
-static constexpr uint16_t ATTR_CTRL_IDX_COLOR_PLANE_ENABLE_REG = 0x12;
-static constexpr uint16_t ATTR_CTRL_IDX_HORZ_PXL_PAN_REG = 0x13;
-static constexpr uint16_t ATTR_CTRL_IDX_COLOR_SELECT_REG = 0x14;
+static constexpr uint16_t ATRB_CTRL_ADDR_DATA_REG = 0x3C0;
+static constexpr uint16_t ATRB_CTRL_DATA_READ_REG = 0x3C1;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG0 = 0x0;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG1 = 0x1;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG2 = 0x2;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG3 = 0x3;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG4 = 0x4;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG5 = 0x5;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG6 = 0x6;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG7 = 0x7;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG8 = 0x8;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG9 = 0x9;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG10 = 0xA;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG11 = 0xB;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG12 = 0xC;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG13 = 0xD;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG14 = 0xE;
+static constexpr uint16_t ATRB_CTRL_IDX_PALET_REG15 = 0xF;
+static constexpr uint16_t ATRB_CTRL_IDX_ATRB_MODE_CTRL_REG = 0x10;
+static constexpr uint16_t ATRB_CTRL_IDX_OVERSCAN_COLOR_REG = 0x11;
+static constexpr uint16_t ATRB_CTRL_IDX_COLOR_PLANE_ENABLE_REG = 0x12;
+static constexpr uint16_t ATRB_CTRL_IDX_HORZ_PXL_PAN_REG = 0x13;
+static constexpr uint16_t ATRB_CTRL_IDX_COLOR_SELECT_REG = 0x14;
 
 /* CRT Controller Registers */
 static constexpr uint16_t CRTC_ADDR_REG = 0x3D4;
@@ -133,6 +133,8 @@ uint8_t read_seq_reg(uint8_t index);
 void write_seq_reg(uint8_t index, uint8_t data);
 uint8_t read_crt_ctrl_reg(uint8_t index);
 void write_crt_ctrl_reg(uint8_t index, uint8_t data);
+uint32_t read_color_reg(uint8_t index, uint8_t& r, uint8_t& g, uint8_t& b);
+void write_color_reg(uint8_t index, uint8_t r, uint8_t g, uint8_t b);
 
 static inline uint8_t entry_color(vga_color fg, vga_color bg) 
 {

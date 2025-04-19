@@ -8,8 +8,8 @@ static constexpr uint8_t PAS_BIT = (1 << 5);
 uint8_t read_atrb_reg(uint8_t index) {
     cli();
     (void) inb(INPUT_STATUS_COLOR_REG1);  // reset
-    outb(ATTR_CTRL_ADDR_DATA_REG, index | PAS_BIT);
-    uint8_t data = inb(ATTR_CTRL_ADDR_DATA_REG);
+    outb(ATRB_CTRL_ADDR_DATA_REG, index | PAS_BIT);
+    uint8_t data = inb(ATRB_CTRL_ADDR_DATA_REG);
     sti();
     return data;
 }
@@ -18,8 +18,8 @@ uint8_t read_atrb_reg(uint8_t index) {
 void write_atrb_reg(uint8_t index, uint8_t data) {
     cli();
     (void) inb(INPUT_STATUS_COLOR_REG1);  // reset
-    outb(ATTR_CTRL_ADDR_DATA_REG, index | PAS_BIT);
-    outb(ATTR_CTRL_ADDR_DATA_REG, data);
+    outb(ATRB_CTRL_ADDR_DATA_REG, index | PAS_BIT);
+    outb(ATRB_CTRL_ADDR_DATA_REG, data);
     sti();
 }
 
@@ -90,5 +90,25 @@ void write_crt_ctrl_reg(uint8_t index, uint8_t data) {
     outb(CRTC_DATA_REG, data);
     sti();
 }
+
+uint32_t read_color_reg(uint8_t index, uint8_t& r, uint8_t& g, uint8_t& b) {
+    cli();
+    outb(vga::DAC_ADDR_WRITE_MODE_REG, index);
+    r = inb(vga::DAC_ADDR_DATA_REG);
+    g = inb(vga::DAC_ADDR_DATA_REG);
+    b = inb(vga::DAC_ADDR_DATA_REG);
+    sti();
+    return ((b & 0x3F) << 12) | ((g & 0x3F) << 6) | (r & 0x3F);
+}
+
+void write_color_reg(uint8_t index, uint8_t r, uint8_t g, uint8_t b) {
+    cli();
+    outb(vga::DAC_ADDR_WRITE_MODE_REG, index);
+    outb(vga::DAC_ADDR_DATA_REG, r);
+    outb(vga::DAC_ADDR_DATA_REG, g);
+    outb(vga::DAC_ADDR_DATA_REG, b);
+    sti();
+}
+
 
 }

@@ -7,6 +7,7 @@
 #include "string.h"
 #include "x86.h"
 #include "vga.h"
+#include "vec2.h"
 
 static constexpr int IDT_SIZE = 256;
 
@@ -16196,10 +16197,10 @@ void kernel_main(void)
 
     /* load color palette */
     for (int i = 0; i < 256; i++) {
-        outb(0x3c8, i);
-        outb(0x3c9, (i & 0x7) * 9);
-        outb(0x3c9, ((i >> 3) & 0x3) * 21);
-        outb(0x3c9, ((i >> 5) & 0x7) * 9);
+        outb(vga::DAC_ADDR_WRITE_MODE_REG, i);
+        outb(vga::DAC_ADDR_DATA_REG, (i & 0x7) * 9);
+        outb(vga::DAC_ADDR_DATA_REG, ((i >> 3) & 0x3) * 21);
+        outb(vga::DAC_ADDR_DATA_REG, ((i >> 5) & 0x7) * 9);
     }
 
     for (int i = 0;;i++) {
@@ -16212,6 +16213,7 @@ void kernel_main(void)
                 putpixel(row, col, r, g, b);
             }
         }
+
     }
 
 

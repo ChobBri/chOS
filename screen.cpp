@@ -115,18 +115,30 @@ void drawline(int x0, int y0, int x1, int y1, uint8_t r, uint8_t g, uint8_t b) {
     g = g / 64;
     b = b / 32;
 
+    if (x0 > x1) {
+        int tmp = x0;
+        x0 = x1;
+        x1 = tmp;
+        tmp = y0;
+        y0 = y1;
+        y1 = tmp;
+    }
+
     int dx = x1 - x0;
     int dy = y1 - y0;
-    
+
     if (dx == 0) {
         for (int y = y0; y <= y1; y++) {
             ((uint8_t*)0xA0000)[y * screen_width + x0] = b * (8 * 4)  + g * 8 + r;
         }
+        return;
     }
     
     float m = dy / (float) dx;
+
+    int xend = min(x1, screen_width - 1);
     
-    for (int x = x0; x <= x1; x++) {
+    for (int x = x0; x <= xend; x++) {
         int y = round(m * (x - x0)) + y0;
         ((uint8_t*)0xA0000)[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
     }

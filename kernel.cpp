@@ -9,7 +9,7 @@
 #include "vga.h"
 #include "vec2.h"
 #include "screen.h"
-
+#include "world.h"
 static constexpr int IDT_SIZE = 256;
 
 typedef struct {
@@ -16179,8 +16179,6 @@ unsigned char chOS_logo[320 * 200 * 3] = {
 };
 
 
-
-
 extern "C"
 void kernel_main(void) 
 {
@@ -16200,6 +16198,8 @@ void kernel_main(void)
             screen::putpixel(col, row, r, g, b);
         }
     }
+    world::init(screen::width(), screen::height());
+    world::run();
 
     for(;;) {}  // hang for now
 }

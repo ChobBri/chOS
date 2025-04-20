@@ -5,8 +5,10 @@
 
 namespace screen {
 
+static constexpr uint32_t LINEAR_FRAMEBUFFER_MEMORY_BASE = 0xA0000;
 static int screen_width;
 static int screen_height;
+static uint8_t* framebuffer = (uint8_t *) LINEAR_FRAMEBUFFER_MEMORY_BASE;
 
 void init() {
     using namespace vga;
@@ -93,6 +95,7 @@ void init() {
 
     screen_width = 320;
     screen_height = 200;
+    framebuffer = (uint8_t *) LINEAR_FRAMEBUFFER_MEMORY_BASE;
 }
 
 int width() {
@@ -107,7 +110,7 @@ void putpixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     r = r / 32;
     g = g / 64;
     b = b / 32;
-    ((uint8_t*)0xA0000)[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
+    framebuffer[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
 }
 
 void drawline(int x0, int y0, int x1, int y1, uint8_t r, uint8_t g, uint8_t b) {
@@ -115,33 +118,66 @@ void drawline(int x0, int y0, int x1, int y1, uint8_t r, uint8_t g, uint8_t b) {
     g = g / 64;
     b = b / 32;
 
-    if (x0 > x1) {
-        int tmp = x0;
-        x0 = x1;
-        x1 = tmp;
-        tmp = y0;
-        y0 = y1;
-        y1 = tmp;
-    }
-
     int dx = x1 - x0;
     int dy = y1 - y0;
 
+    int ystart;
+    int yend;
+    int xstart;
+    int xend;
+
     if (dx == 0) {
-        for (int y = y0; y <= y1; y++) {
-            ((uint8_t*)0xA0000)[y * screen_width + x0] = b * (8 * 4)  + g * 8 + r;
+        if (x0 < 0 || x0 >= screen_width) {
+            return;
+        }
+        ystart = max(0, min(y0, y1));
+        yend = min(screen_height - 1, max(y0, y1));
+        for (int y = ystart; y <= yend; y++) {
+            framebuffer[y * screen_width + x0] = b * (8 * 4)  + g * 8 + r;
+        }
+        return;
+    }
+
+    if (dy == 0) {
+        if (y0 < 0 || y0 >= screen_height) {
+            return;
+        }
+        xstart = max(0, min(x0, x1));
+        xend = min(screen_width - 1, max(x0, x1));
+        for (int x = xstart; x <= xend; x++) {
+            framebuffer[y0 * screen_width + x] = b * (8 * 4)  + g * 8 + r;
         }
         return;
     }
     
     float m = dy / (float) dx;
 
-    int xend = min(x1, screen_width - 1);
-    
-    for (int x = x0; x <= xend; x++) {
-        int y = round(m * (x - x0)) + y0;
-        ((uint8_t*)0xA0000)[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
+    if (abs(m) <= 1.f) {
+        xstart = max(0, min(x0, x1));
+        xend = min(screen_width - 1, max(x0, x1));
+
+        for (int x = xstart; x <= xend; x++) {
+            int y = round(m * (x - x0)) + y0;
+            if (y < 0 || y >= screen_height) {
+                continue;
+            }
+            framebuffer[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
+        }
     }
+    else {
+        ystart = max(0, min(y0, y1));
+        yend = min(screen_height - 1, max(y0, y1));
+        m = 1/m;  // we should now use run / rise
+
+        for (int y = ystart; y <= yend; y++) {
+            int x = round(m * (y - y0)) + x0;
+            if (x < 0 || x >= screen_width) {
+                continue;
+            }
+            framebuffer[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
+        }
+    }
+
 }
 
 }

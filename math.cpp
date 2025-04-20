@@ -33,6 +33,30 @@ float invSqrt(float x) {
     return u.x;
 }
 
+int floor(float x) {
+    if (x >= 0.0f) {
+        return (int) x;
+    }
+
+    int intx = (int) x;
+    if (x == (float)intx) {
+        return intx;
+    }
+    return intx - 1;
+}
+
+int ceil(float x) {
+    if (x <= 0.0f) {
+        return -(int) (-x);
+    }
+
+    int intx = (int) x;
+    if (x == (float) intx) {
+        return intx;
+    }
+    return intx + 1;
+}
+
 int round(float x) {
     if (x > 0.0f) {
         x += 0.5f;
@@ -49,4 +73,91 @@ int abs(int x) {
         return -x;
     }
     return x;
+}
+
+float abs(float x) {
+    if (x < 0) {
+        return -x;
+    }
+    return x;
+}
+
+int max(int a, int b) {
+    if (a > b) {
+        return a;
+    }
+    return b;
+}
+
+float max(float a, float b) {
+    if (a > b) {
+        return a;
+    }
+    return b;
+}
+
+int min(int a, int b) {
+    if (a < b) {
+        return a;
+    }
+    return b;
+}
+
+float min(float a, float b) {
+    if (a < b) {
+        return a;
+    }
+    return b;
+}
+
+
+/* Bhaskara I approximation */
+float sin(float x) {
+    int offsetFactor = floor(x / TAU);
+    x -= offsetFactor * TAU;
+    if (x < PI) {
+        float sinx = (16 * x * (PI - x)) / (5 * PI * PI - 4 * x * (PI - x));
+        return sinx;
+    }
+    else {
+        x -= PI;
+        float sinx = -(16 * x * (PI - x)) / (5 * PI * PI - 4 * x * (PI - x));
+        return sinx;
+    }
+}
+
+float cos(float x) {
+    return sin(x + PI / 2);
+}
+
+float atan2(float y, float x) {
+    if (x == 0.0) {
+        if (y >= 0.f) {
+            return PI / 2;
+        }
+        else {
+            return -PI / 2;
+        }
+    }
+
+    float m = y / x;
+    float absm = abs(m);
+
+    float arctan = 0;
+
+    if (absm < 1.f) {
+        arctan = absm / (1 + 0.28f * absm * absm);
+    }
+    else {
+        arctan = PI / 2 - absm / (absm * absm + 0.28);
+    }
+
+    if (x < 0.0f) {
+        arctan += PI;
+    }
+
+    if (m < 0.0f) {
+        return -arctan;
+    }
+    return arctan;
 }

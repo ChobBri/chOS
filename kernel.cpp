@@ -9,6 +9,7 @@
 #include "vga.h"
 #include "vec2.h"
 #include "screen.h"
+#include "keyboard.h"
 #include "world.h"
 static constexpr int IDT_SIZE = 256;
 
@@ -94,43 +95,9 @@ void handleTimerInterrupt(){
 }
 
 void handleKeyboardInterrupt(){
-    static bool shift = false;
-    static bool capslock = false;
-    static bool e0 = false;
     uint8_t scancode = inb(0x60);
-
-    if (scancode == 0xe0) {
-        e0 = true;
-        return;
-    }
-    
-    keycode kc;
-    bool pressed;
-
-    if (!e0) {
-        kc = scancodeToKeycode(scancode);
-        pressed = scancodeToPressed(scancode);
-    }
-    else {
-        kc = scancodeToKeycode2(scancode);
-        pressed = scancodeToPressed2(scancode);
-    }
-    e0 = false;
-    
-    if (pressed && (kc == LeftShift || kc == RightShift)) {
-        shift = true;
-    } else if (!pressed && (kc == LeftShift || kc == RightShift)) {
-        shift = false;
-    }
-
-    if (pressed && kc == CapsLock) {
-        capslock = !capslock;
-    }
-
-    char c = keycodeToChar(kc, shift ^ capslock);
-    if (c != '\0' && pressed) {
-        terminal::putchar(c);
-    }
+    // terminal::putchar(scancode);
+    keyboard::handleScanCode(scancode);
 }
 
 extern "C"
@@ -16178,17 +16145,7 @@ unsigned char chOS_logo[320 * 200 * 3] = {
     0, 5, 19, 0, 6, 20, 0, 6, 20, 0, 6, 20
 };
 
-
-extern "C"
-void kernel_main(void) 
-{
-    /* Initialize */
-	setup_gdt32();
-
-    screen::init();
-    load_idt();
-    (void) welcomelogo;
-
+void draw_logo(void) {
     for (int row = 0; row < 200; row++) {
         for (int col = 0; col < 320; col++) {
             int index = row * 320 + col;
@@ -16198,8 +16155,24 @@ void kernel_main(void)
             screen::putpixel(col, row, r, g, b);
         }
     }
-    world::init(screen::width(), screen::height());
-    world::run();
+}
+
+extern "C"
+void kernel_main(void) 
+{
+    /* Initialize */
+	setup_gdt32();
+
+    // screen::init();
+    terminal::initialize();
+    
+    load_idt();
+    (void) welcomelogo;
+    // terminal::writestring(welcomelogo);
+
+    // draw_logo();
+    // world::init(screen::width(), screen::height());
+    // world::run();
 
     for(;;) {}  // hang for now
 }

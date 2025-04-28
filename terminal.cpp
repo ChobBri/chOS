@@ -3,6 +3,7 @@
 #include "terminal.h"
 #include "vga.h"
 #include "string.h"
+#include "keyboard.h"
 
 namespace terminal {
 using namespace vga;
@@ -134,8 +135,26 @@ void clear_line(int row) {
     state.line_len[row] = 0;
 }
 
+void handleKeyboardInput(keycode kc, bool pressed) {
+    if (!pressed) {
+        return;
+    }
+
+    if (kc == None) {
+        return;
+    }
+
+    bool shift = keyboard::isKeyPressed(LeftShift) || keyboard::isKeyPressed(RightShift);
+    bool capslock = keyboard::isCapsLockOn();
+    char c = keycodeToChar(kc, shift ^ capslock);
+    if (c != '\0' && pressed) {
+        terminal::putchar(c);
+    }
+}
+
 void initialize(void) 
 {
+    init_mode3();
     /* init fields */
 	state.row_pos = 0;
 	state.col_pos = 0;
@@ -151,6 +170,8 @@ void initialize(void)
 	}
 
     updatecursor(state.col_pos, state.row_pos);
+
+    keyboard::subscribeToInputEvent(handleKeyboardInput);
 }
 
 void setcolor(vga::vga_color fg, vga::vga_color bg) 

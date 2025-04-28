@@ -8,6 +8,7 @@ float invSqrt(float x);
 int floor(float x);
 int ceil(float x);
 int round(float x);
+int clamp(int val, int lower, int upper);
 int abs(int x);
 float abs(float f);
 

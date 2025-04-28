@@ -4,6 +4,7 @@
 #include "vga.h"
 #include "string.h"
 #include "keyboard.h"
+#include "math.h"
 
 namespace terminal {
 using namespace vga;
@@ -28,8 +29,8 @@ static inline uint8_t inb(uint16_t port)
 }
 
 typedef struct {
-    size_t row_pos;
-    size_t col_pos;
+    int row_pos;
+    int col_pos;
     uint8_t color;
     uint16_t* buffer;
     uint8_t line_len[VGA_HEIGHT];
@@ -116,8 +117,7 @@ char* itoa( int value, char* str, int base )
     return rc;
 }
 
-
-void updatecursor(size_t col, size_t row)
+void updatecursor(int col, int row)
 {
     uint16_t pos = row * VGA_WIDTH + col;
 
@@ -125,10 +125,36 @@ void updatecursor(size_t col, size_t row)
     outb(0x3D5, (uint8_t) (pos & 0xFF));
     outb(0x3D4, 0x0E);
     outb(0x3D5, (uint8_t) ((pos >> 8) & 0xFF));
+
+    state.col_pos = col;
+    state.row_pos = row;
+}
+
+/* dir is clamped between -1 and 1 */
+void shiftCursorHorizontally(int dir) {
+    dir = clamp(dir, -1, 1);
+    int newCol = state.col_pos + dir;
+
+    if (newCol < 0 || newCol > state.line_len[state.row_pos]) {
+        return;
+    }
+    updatecursor(newCol, state.row_pos);
+}
+/* col/rowDir is clamped between -1 and 1 */
+void shiftCursorVertically(int dir) {
+    dir = clamp(dir, -1, 1);
+    int newRow = state.row_pos - dir;
+
+    if (newRow < 0 || newRow >= VGA_HEIGHT) {
+        return;
+    }
+
+    int newCol = clamp(state.col_pos, 0, state.line_len[newRow]);
+    updatecursor(newCol, newRow);
 }
 
 void clear_line(int row) {
-    for (size_t col = 0; col < VGA_WIDTH; col++) {
+    for (int col = 0; col < VGA_WIDTH; col++) {
         const int index = row * VGA_WIDTH + col;
         state.buffer[index] = vga::entry(' ', state.color);
     }
@@ -146,10 +172,28 @@ void handleKeyboardInput(keycode kc, bool pressed) {
 
     bool shift = keyboard::isKeyPressed(LeftShift) || keyboard::isKeyPressed(RightShift);
     bool capslock = keyboard::isCapsLockOn();
+
     char c = keycodeToChar(kc, shift ^ capslock);
-    if (c != '\0' && pressed) {
-        terminal::putchar(c);
+    if (c != '\0') {
+        if (pressed) {
+            terminal::putchar(c);
+        }
     }
+    else {
+        if (keyboard::isKeyPressed(LeftArrow)) {
+            shiftCursorHorizontally(-1);
+        }
+        else if (keyboard::isKeyPressed(RightArrow)) {
+            shiftCursorHorizontally(1);
+        }
+        else if (keyboard::isKeyPressed(UpArrow)) {
+            shiftCursorVertically(1);
+        }
+        else if (keyboard::isKeyPressed(DownArrow)) {
+            shiftCursorVertically(-1);
+        }
+    }
+
 }
 
 void initialize(void) 

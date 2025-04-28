@@ -68,6 +68,18 @@ int round(float x) {
     }
 }
 
+int clamp(int val, int lower, int upper) {
+    if (val < lower) {
+        return lower;
+    }
+    else if (val > upper) {
+        return upper;
+    }
+    else {
+        return val;
+    }
+}
+
 int abs(int x) {
     if (x < 0) {
         return -x;

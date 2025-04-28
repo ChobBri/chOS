@@ -146,4 +146,8 @@ static inline uint16_t entry(char c, uint8_t color)
 	return (uint16_t) c | (uint16_t) color << 8;
 }
 
+static inline char extractChar(uint16_t entry) {
+	return (char) (entry & 0xFF);
+}
+
 }

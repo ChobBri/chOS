@@ -5,28 +5,11 @@
 #include "string.h"
 #include "keyboard.h"
 #include "math.h"
+#include "x86.h"
+#include "char.h"
 
 namespace terminal {
 using namespace vga;
-
-static inline void outb(uint16_t port, uint8_t val)
-{
-    __asm__ volatile ( "outb %b0, %w1" : : "a"(val), "Nd"(port) : "memory");
-    /* There's an outb %al, $imm8 encoding, for compile-time constant port numbers that fit in 8b. (N constraint).
-     * Wider immediate constants would be truncated at assemble-time (e.g. "i" constraint).
-     * The  outb  %al, %dx  encoding is the only option for all other cases.
-     * %1 expands to %dx because  port  is a uint16_t.  %w1 could be used if we had the port number a wider C type */
-}
-
-static inline uint8_t inb(uint16_t port)
-{
-    uint8_t ret;
-    __asm__ volatile ( "inb %w1, %b0"
-                   : "=a"(ret)
-                   : "Nd"(port)
-                   : "memory");
-    return ret;
-}
 
 typedef struct {
     int row_pos;
@@ -39,6 +22,8 @@ typedef struct {
 static terminal_state state;
 
 using namespace vga;
+
+void deleteChar();
 
 void init_mode3() {
     vga::write_atrb_reg(0x10, 0x0C);
@@ -172,33 +157,37 @@ void handleKeyboardInput(keycode kc, bool pressed) {
 
     bool shift = keyboard::isKeyPressed(LeftShift) || keyboard::isKeyPressed(RightShift);
     bool capslock = keyboard::isCapsLockOn();
-
-    char c = keycodeToChar(kc, shift ^ capslock);
-    if (c != '\0') {
-        if (pressed) {
-            terminal::putchar(c);
-        }
+    char dummyC = keycodeToChar(kc, false);
+    if (!isAlpha(dummyC)) {
+        capslock = false;
     }
-    else {
-        if (keyboard::isKeyPressed(LeftArrow)) {
+    char c = keycodeToChar(kc, shift ^ capslock);
+    if (pressed) {
+        if (kc == LeftArrow) {
             shiftCursorHorizontally(-1);
         }
-        else if (keyboard::isKeyPressed(RightArrow)) {
+        else if (kc == RightArrow) {
             shiftCursorHorizontally(1);
         }
-        else if (keyboard::isKeyPressed(UpArrow)) {
+        else if (kc == UpArrow) {
             shiftCursorVertically(1);
         }
-        else if (keyboard::isKeyPressed(DownArrow)) {
+        else if (kc == DownArrow) {
             shiftCursorVertically(-1);
         }
+        else if (kc == Backspace) {
+            deleteChar();
+        }
+        else {
+            if (c != '\0') {
+                terminal::putchar(c);
+            }
+        }
     }
-
 }
 
 void initialize(void) 
 {
-    init_mode3();
     /* init fields */
 	state.row_pos = 0;
 	state.col_pos = 0;
@@ -254,6 +243,25 @@ void scroll(int scrollAmount) {
             clear_line(row);
         }
     }
+}
+
+char getChar(int col, int row) {
+    const size_t index = row * VGA_WIDTH + col;
+	return vga::extractChar(state.buffer[index]);
+}
+
+void deleteChar() {
+    if (state.line_len[state.row_pos] == 0) {
+        return;
+    }
+
+    for (int col = state.col_pos - 1; col < state.line_len[state.row_pos] - 1; col++) {
+        char c = getChar(col + 1, state.row_pos);
+        putentryat(c, state.color, col, state.row_pos);
+    }
+    putentryat(' ', state.color, state.line_len[state.row_pos] - 1, state.row_pos);
+    state.line_len[state.row_pos]--;
+    updatecursor(state.col_pos - 1, state.row_pos);
 }
 
 void putchar(char c) 

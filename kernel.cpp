@@ -11,6 +11,8 @@
 #include "screen.h"
 #include "keyboard.h"
 #include "world.h"
+#include "multiboot.h"
+
 static constexpr int IDT_SIZE = 256;
 
 typedef struct {
@@ -16157,108 +16159,9 @@ void draw_logo(void) {
     }
 }
 
-struct multiboot_mmap_entry
-{
-  uint32_t size;
-  uint32_t addr_low;
-  uint32_t addr_high;
-  uint32_t len_low;
-  uint32_t len_high;
-#define MULTIBOOT_MEMORY_AVAILABLE              1
-#define MULTIBOOT_MEMORY_RESERVED               2
-#define MULTIBOOT_MEMORY_ACPI_RECLAIMABLE       3
-#define MULTIBOOT_MEMORY_NVS                    4
-#define MULTIBOOT_MEMORY_BADRAM                 5
-  uint32_t type;
-} __attribute__((packed));
-
-struct multiboot_info
-{
-  /* Multiboot info version number */
-  uint32_t flags;
-
-  /* Available memory from BIOS */
-  uint32_t mem_lower;
-  uint32_t mem_upper;
-
-  /* "root" partition */
-  uint32_t boot_device;
-
-  /* Kernel command line */
-  uint32_t cmdline;
-
-  /* Boot-Module list */
-  uint32_t mods_count;
-  uint32_t mods_addr;
 
 
-  /* flags 4,5 */
-  uint32_t dummy1;
-  uint32_t dummy2;
-  uint32_t dummy3;
-  uint32_t dummy4;
-//   union
-//   {
-//     multiboot_aout_symbol_table_t aout_sym;
-//     multiboot_elf_section_header_table_t elf_sec;
-//   } u;
 
-  /* Memory Mapping buffer */
-  uint32_t mmap_length;
-  uint32_t mmap_addr;
-
-  /* Drive Info buffer */
-  uint32_t drives_length;
-  uint32_t drives_addr;
-
-  /* ROM configuration table */
-  uint32_t config_table;
-
-  /* Boot Loader Name */
-  uint32_t boot_loader_name;
-
-  /* APM table */
-  uint32_t apm_table;
-
-  /* Video */
-  uint32_t vbe_control_info;
-  uint32_t vbe_mode_info;
-  uint16_t vbe_mode;
-  uint16_t vbe_interface_seg;
-  uint16_t vbe_interface_off;
-  uint16_t vbe_interface_len;
-
-  uint32_t framebuffer_addr_low;
-  uint32_t framebuffer_addr_high;
-  uint32_t framebuffer_pitch;
-  uint32_t framebuffer_width;
-  uint32_t framebuffer_height;
-  uint8_t framebuffer_bpp;
-#define MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED 0
-#define MULTIBOOT_FRAMEBUFFER_TYPE_RGB     1
-#define MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT     2
-  uint8_t framebuffer_type;
-  union
-  {
-    struct
-    {
-      uint32_t framebuffer_palette_addr;
-      uint16_t framebuffer_palette_num_colors;
-    };
-    struct
-    {
-      uint8_t framebuffer_red_field_position;
-      uint8_t framebuffer_red_mask_size;
-      uint8_t framebuffer_green_field_position;
-      uint8_t framebuffer_green_mask_size;
-      uint8_t framebuffer_blue_field_position;
-      uint8_t framebuffer_blue_mask_size;
-    };
-  };
-};
-
-extern uint32_t multiboot_info_ptr;
-extern uint32_t multiboot_magic;
 extern uint32_t _linker_end;
 
 extern "C"
@@ -16272,33 +16175,153 @@ void kernel_main(void)
     
     load_idt();
     (void) welcomelogo;
-    terminal::writestring(welcomelogo);
+    // terminal::writestring(welcomelogo);
 
     char buf[100];
-    struct multiboot_info info = *(struct multiboot_info *)multiboot_info_ptr;
-
-    terminal::writestring(terminal::itoa(multiboot_magic, buf, 16));
-    terminal::writestring("\n");
-    terminal::writestring(terminal::itoa(info.flags, buf, 2));
-    terminal::writestring("\n");
+    const multiboot_info* info = get_multiboot_info();
 
     void* mem_start = (void*)&_linker_end;
     void* mem_end = 0;
 
-    struct multiboot_mmap_entry *mmap;
-    for (mmap = (struct multiboot_mmap_entry *) info.mmap_addr;
-        (unsigned long) mmap < info.mmap_addr + info.mmap_length;
-        mmap = (struct multiboot_mmap_entry *) ((unsigned long) mmap
-                                + mmap->size + sizeof (mmap->size)))
+    multiboot_mmap_entry *mmap;
+    for (mmap = (multiboot_mmap_entry *) info->mmap_addr;
+        (uint32_t) mmap < info->mmap_addr + info->mmap_length;
+        mmap = (multiboot_mmap_entry *) ((uint32_t) mmap + mmap->size + sizeof (mmap->size)))
         {   
             if (mmap->type == 0x1 && mmap->addr_low == 0x100000) {
                 mem_end = (void*) (mmap->len_low + 0x100000);
             }
         }
+    terminal::writestring("== Multiboot Info ==\n");
 
+    terminal::writestring("Memory: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_MEMORY) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("Boot Device: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_BOOTDEV) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("Command Line: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_CMDLINE) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("Modules: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_MODS) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("AOut: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_AOUT_SYMS) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("ELF Section Header: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_ELF_SHDR) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("Memory Map: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_MEM_MAP) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("Drives: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_DRIVE_INFO) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("Config Table: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_CONFIG_TABLE) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("Boot Loader: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_BOOT_LOADER_NAME) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("APM Table: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_APM_TABLE) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("VBE: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_VBE_INFO) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("Framebuffer: ");
+    terminal::writestring(isFlagSet(MULTIBOOT_INFO_FRAMEBUFFER_INFO) ? "Enabled" : "Disabled");
+    terminal::writestring("\n");
+    terminal::writestring("\n");
+
+    if (isFlagSet(MULTIBOOT_INFO_MEMORY)) {
+        terminal::writestring("Lower Memory: 0x");
+        terminal::writestring(terminal::itoa(info->mem_lower, buf, 16));
+        terminal::writestring("\n");
+        terminal::writestring("Upper Memory: 0x");
+        terminal::writestring(terminal::itoa(info->mem_upper, buf, 16));
+        terminal::writestring("\n");
+        terminal::writestring("\n");
+    }
+
+    if (isFlagSet(MULTIBOOT_INFO_BOOTDEV)) {
+        terminal::writestring("BIOS Drive Number: 0x");
+        terminal::writestring(terminal::itoa((info->boot_device >> 24) & 0xFF, buf, 16));
+        terminal::writestring("\n");
+        terminal::writestring("Partition Level 1: 0x");
+        terminal::writestring(terminal::itoa((info->boot_device >> 16) & 0xFF, buf, 16));
+        terminal::writestring("\n");
+        terminal::writestring("Partition Level 2: 0x");
+        terminal::writestring(terminal::itoa((info->boot_device >> 8) & 0xFF, buf, 16));
+        terminal::writestring("\n");
+        terminal::writestring("Partition Level 3: 0x");
+        terminal::writestring(terminal::itoa((info->boot_device >> 0) & 0xFF, buf, 16));
+        terminal::writestring("\n");
+        terminal::writestring("\n");
+    }
+
+    if (isFlagSet(MULTIBOOT_INFO_CMDLINE)) {
+        terminal::writestring("Command Line: ");
+        terminal::writestring((const char*) info->cmdline);
+        terminal::writestring("\n");
+        terminal::writestring("\n");
+    }
+
+    if (isFlagSet(MULTIBOOT_INFO_MEM_MAP)) {
+        terminal::writestring("== Memory Map ==");
+        terminal::writestring("\n");
+        multiboot_mmap_entry *mmap;
+        for (mmap = (multiboot_mmap_entry *) info->mmap_addr;
+            (uint32_t) mmap < info->mmap_addr + info->mmap_length;
+            mmap = (multiboot_mmap_entry *) ((uint32_t) mmap + mmap->size + sizeof (mmap->size)))
+            {   
+                terminal::writestring("Memory Address: 0x");
+                terminal::writestring(terminal::itoa((int)mmap->addr_low, buf, 16));
+                terminal::writestring("\n");
+                terminal::writestring("Memory Region Length: 0x");
+                terminal::writestring(terminal::itoa((int)mmap->len_low, buf, 16));
+                terminal::writestring("\n");
+                terminal::writestring("Memory Region Type: ");
+                const char* typeStr;
+                switch (mmap->type) {
+                    case multiboot_mmap_entry::TYPE_AVAILABLE:
+                        typeStr = "Available";
+                        break;
+                    case multiboot_mmap_entry::TYPE_RESERVED:
+                        typeStr = "Reserved";
+                        break;
+                    case multiboot_mmap_entry::TYPE_ACPI_RECLAIMABLE:
+                        typeStr = "ACPI Reclaimable";
+                        break;
+                    case multiboot_mmap_entry::TYPE_NVS:
+                        typeStr = "NVS";
+                        break;
+                    case multiboot_mmap_entry::TYPE_BADRAM:
+                        typeStr = "Bad Ram";
+                        break;
+                    default:
+                        typeStr = "Reserved";
+                        break;
+                }
+                terminal::writestring(typeStr);
+                terminal::writestring("\n");
+                terminal::writestring("\n");
+            }
+    }
+
+    if (isFlagSet(MULTIBOOT_INFO_BOOT_LOADER_NAME)) {
+        terminal::writestring("Booted by: ");
+        terminal::writestring((const char*) (info->boot_loader_name));
+        terminal::writestring("\n");
+        terminal::writestring("\n");
+    }
+
+    terminal::writestring("Memory start: 0x");
     terminal::writestring(terminal::itoa((int)mem_start, buf, 16));
     terminal::writestring("\n");
 
+    terminal::writestring("Memory end: 0x");
     terminal::writestring(terminal::itoa((int)mem_end, buf, 16));
     terminal::writestring("\n");
 

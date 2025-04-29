@@ -1,3 +1,3 @@
 #!/bin/bash
 
-qemu-system-i386 -kernel kernel
+qemu-system-i386 -kernel kernel # -append <args>

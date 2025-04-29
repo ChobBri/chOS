@@ -11,19 +11,19 @@
 namespace terminal {
 using namespace vga;
 
-typedef struct {
+struct terminal_state {
     int row_pos;
     int col_pos;
     uint8_t color;
     uint16_t* buffer;
-    uint8_t line_len[VGA_HEIGHT];
-} terminal_state;
+    int mem_line = 0;
+    static constexpr int CHAR_MEM_SIZE = VGA_WIDTH * 20 * VGA_HEIGHT;
+    char char_mem[CHAR_MEM_SIZE];
+};
 
 static terminal_state state;
 
 using namespace vga;
-
-void deleteChar();
 
 void init_mode3() {
     vga::write_atrb_reg(0x10, 0x0C);
@@ -102,6 +102,8 @@ char* itoa( int value, char* str, int base )
     return rc;
 }
 
+
+/* mutates pos */
 void updatecursor(int col, int row)
 {
     uint16_t pos = row * VGA_WIDTH + col;
@@ -114,27 +116,65 @@ void updatecursor(int col, int row)
     state.col_pos = col;
     state.row_pos = row;
 }
+void scroll(int scrollAmount);
 
 /* dir is clamped between -1 and 1 */
 void shiftCursorHorizontally(int dir) {
     dir = clamp(dir, -1, 1);
     int newCol = state.col_pos + dir;
+    int newRow = state.row_pos;
 
-    if (newCol < 0 || newCol > state.line_len[state.row_pos]) {
-        return;
+    if (newCol == -1) {
+        newCol = VGA_WIDTH - 1;
+        if (state.row_pos > 0) {
+            newRow = state.row_pos - 1;
+        }
+        else {
+            if (state.mem_line == 0) {
+                return;
+            }
+            newRow = 0;
+            scroll(-1);
+        }
     }
-    updatecursor(newCol, state.row_pos);
+    else if (newCol == VGA_WIDTH) {
+        newCol = 0;
+        if (state.row_pos < VGA_HEIGHT - 1) {
+            newRow = state.row_pos + 1;
+        }
+        else {
+            if (state.mem_line + VGA_HEIGHT >= terminal_state::CHAR_MEM_SIZE) {
+                return;
+            }
+            newRow = VGA_HEIGHT - 1;
+            scroll(1);
+        }
+    }
+
+    updatecursor(newCol, newRow);
 }
+
 /* col/rowDir is clamped between -1 and 1 */
 void shiftCursorVertically(int dir) {
     dir = clamp(dir, -1, 1);
     int newRow = state.row_pos - dir;
 
-    if (newRow < 0 || newRow >= VGA_HEIGHT) {
-        return;
+    if (newRow == -1) {
+        if (state.mem_line <= 0) {
+            return;
+        }
+        scroll(-1);
+        newRow = 0;
+    }
+    else if (newRow == VGA_HEIGHT) {
+        if (state.mem_line + VGA_HEIGHT >= terminal_state::CHAR_MEM_SIZE) {
+            return;
+        }
+        scroll(1);
+        newRow = VGA_HEIGHT - 1;
     }
 
-    int newCol = clamp(state.col_pos, 0, state.line_len[newRow]);
+    int newCol = state.col_pos;
     updatecursor(newCol, newRow);
 }
 
@@ -143,7 +183,6 @@ void clear_line(int row) {
         const int index = row * VGA_WIDTH + col;
         state.buffer[index] = vga::entry(' ', state.color);
     }
-    state.line_len[row] = 0;
 }
 
 void handleKeyboardInput(keycode kc, bool pressed) {
@@ -175,12 +214,9 @@ void handleKeyboardInput(keycode kc, bool pressed) {
         else if (kc == DownArrow) {
             shiftCursorVertically(-1);
         }
-        else if (kc == Backspace) {
-            deleteChar();
-        }
         else {
             if (c != '\0') {
-                terminal::putchar(c);
+                terminal::appendChar(c);
             }
         }
     }
@@ -188,19 +224,23 @@ void handleKeyboardInput(keycode kc, bool pressed) {
 
 void initialize(void) 
 {
+    init_mode3();
+
     /* init fields */
 	state.row_pos = 0;
 	state.col_pos = 0;
 	state.color = vga::entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 	state.buffer = (uint16_t*) VGA_MEMORY_BASE;
-	for (size_t row = 0; row < VGA_HEIGHT; row++) {
-        state.line_len[row] = 0;
-	}
 
     /* clear screen */
 	for (size_t row = 0; row < VGA_HEIGHT; row++) {
         clear_line(row);
 	}
+
+    state.mem_line = 0;
+    for (size_t idx = 0; idx < terminal_state::CHAR_MEM_SIZE; idx++) {
+        state.char_mem[idx] = ' ';
+    }
 
     updatecursor(state.col_pos, state.row_pos);
 
@@ -216,31 +256,23 @@ void putentryat(char c, uint8_t color, size_t x, size_t y)
 {
 	const size_t index = y * VGA_WIDTH + x;
 	state.buffer[index] = vga::entry(c, color);
+	const size_t mem_index = (state.mem_line + y) * VGA_WIDTH + x;
+    state.char_mem[mem_index] = c;
 }
 
-
-/* positive is scroll text up */
-void scroll(int scrollAmount) {
-    if (scrollAmount > 0) {
-        for (size_t row = scrollAmount; row < VGA_HEIGHT; row++) {
-            state.line_len[row - scrollAmount] = state.line_len[row];
-            for (size_t col = 0; col < VGA_WIDTH; col++) {
-                const size_t old_index = row * VGA_WIDTH + col;
-                const size_t new_index = (row - scrollAmount) * VGA_WIDTH + col;
-                state.buffer[new_index] = state.buffer[old_index];
-            }
-            clear_line(row);
-        }
+void putChar(char, int ,int);
+/* positive is scroll text up; clamped between -1 and 1 */
+void scroll(int scrollDir) {
+    scrollDir = clamp(scrollDir, -1, 1);
+    if (scrollDir == 0) {
+        return;
     }
-    else if (scrollAmount < 0) {
-        for (int row = -scrollAmount; row >= 0; row--) {
-            state.line_len[row - scrollAmount] = state.line_len[row];
-            for (size_t col = 0; col < VGA_WIDTH; col++) {
-                const size_t old_index = row * VGA_WIDTH + col;
-                const size_t new_index = (row - scrollAmount) * VGA_WIDTH + col;
-                state.buffer[new_index] = state.buffer[old_index];
-            }
-            clear_line(row);
+
+    state.mem_line += scrollDir;
+    for (size_t row = 0; row < VGA_HEIGHT; row++) {
+        for (size_t col = 0; col < VGA_WIDTH; col++) {
+            const size_t mem_index = (state.mem_line + row) * VGA_WIDTH + col;
+            putChar(state.char_mem[mem_index], col, row);
         }
     }
 }
@@ -250,24 +282,13 @@ char getChar(int col, int row) {
 	return vga::extractChar(state.buffer[index]);
 }
 
-void deleteChar() {
-    if (state.line_len[state.row_pos] == 0) {
-        return;
-    }
-
-    for (int col = state.col_pos - 1; col < state.line_len[state.row_pos] - 1; col++) {
-        char c = getChar(col + 1, state.row_pos);
-        putentryat(c, state.color, col, state.row_pos);
-    }
-    putentryat(' ', state.color, state.line_len[state.row_pos] - 1, state.row_pos);
-    state.line_len[state.row_pos]--;
-    updatecursor(state.col_pos - 1, state.row_pos);
+void putChar(char c, int col, int row) {
+    putentryat(c, state.color, col, row);
 }
 
-void putchar(char c) 
+void appendChar(char c) 
 {
     if (c == '\n') {
-        state.line_len[state.row_pos] = state.col_pos;
         state.col_pos = 0;
         if (++state.row_pos == VGA_HEIGHT) {
             state.row_pos = VGA_HEIGHT - 1;
@@ -278,7 +299,6 @@ void putchar(char c)
         if (state.col_pos == 0) {
             if (state.row_pos > 0) {
                 state.row_pos--;
-                state.col_pos = state.line_len[state.row_pos];
                 if (state.col_pos >= VGA_WIDTH) {
                     state.col_pos = VGA_WIDTH - 1;
                 }
@@ -286,13 +306,11 @@ void putchar(char c)
         }
         else {
             state.col_pos--;
-            state.line_len[state.row_pos] = state.col_pos;
         }
         putentryat(' ', state.color, state.col_pos, state.row_pos);
     }
     else {
         putentryat(c, state.color, state.col_pos, state.row_pos);
-        state.line_len[state.row_pos] = state.col_pos + 1;
         if (++state.col_pos == VGA_WIDTH) {
             state.col_pos = 0;
             if (++state.row_pos == VGA_HEIGHT) {
@@ -307,7 +325,7 @@ void putchar(char c)
 void write(const char* data, size_t size) 
 {
 	for (size_t i = 0; i < size; i++) {
-		putchar(data[i]);
+		appendChar(data[i]);
     }
 }
 

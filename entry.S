@@ -31,6 +31,15 @@ stack is properly aligned and failure to align the stack will result in
 undefined behavior.
 */
 .section .bss
+
+.global multiboot_info_ptr
+.align 4
+multiboot_info_ptr:
+.long 0
+.global multiboot_magic
+multiboot_magic:
+.long 0
+
 .align 16
 stack_bottom:
 .skip 16384 # 16 KiB
@@ -57,6 +66,8 @@ _start:
 	itself. It has absolute and complete power over the
 	machine.
 	*/
+	mov %ebx, (multiboot_info_ptr)
+	mov %eax, (multiboot_magic)
 
 	/*
 	To set up a stack, we set the esp register to point to the top of the

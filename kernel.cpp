@@ -12,7 +12,7 @@
 #include "keyboard.h"
 #include "world.h"
 #include "multiboot.h"
-
+#include "memory.h"
 static constexpr int IDT_SIZE = 256;
 
 typedef struct {
@@ -16170,6 +16170,7 @@ void kernel_main(void)
     /* Initialize */
 	setup_gdt32();
 
+    init_memory();
     // screen::init();
     terminal::initialize();
     

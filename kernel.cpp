@@ -16269,6 +16269,30 @@ void kernel_main(void)
         terminal::writestring("\n");
     }
 
+    if (isFlagSet(MULTIBOOT_INFO_MODS)) {
+        terminal::writestring("== Modules ==");
+        terminal::writestring("\n");
+        terminal::writestring("Module count: ");
+        terminal::writestring(terminal::itoa(info->mods_count, buf, 10));
+        terminal::writestring("\n");
+        terminal::writestring("\n");
+
+        multiboot_mod_entry* mod = (multiboot_mod_entry*) info->mods_addr;
+        for (uint32_t i = 0; i < info->mods_count; i++) {
+            terminal::writestring("Module name: ");
+            terminal::writestring((const char*)(mod->string));
+            terminal::writestring("\n");
+            terminal::writestring("Start addr: 0x");
+            terminal::writestring(terminal::itoa(mod->mod_start, buf, 16));
+            terminal::writestring("\n");
+            terminal::writestring("End addr: 0x");
+            terminal::writestring(terminal::itoa(mod->mod_end, buf, 16));
+            terminal::writestring("\n");
+            terminal::writestring("\n");
+            mod++;
+        }
+    }
+
     if (isFlagSet(MULTIBOOT_INFO_MEM_MAP)) {
         terminal::writestring("== Memory Map ==");
         terminal::writestring("\n");

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-qemu-system-i386 -kernel kernel -append "arg" -initrd ramdisk
+qemu-system-i386 -kernel kernel -append "video" -initrd ramdisk

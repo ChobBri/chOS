@@ -2,6 +2,8 @@
 #include "vec3.h"
 #include "linalg.h"
 #include "screen.h"
+#include "keyboard.h"
+#include "vec2.h"
 namespace world {
         
     struct camera {
@@ -14,6 +16,34 @@ namespace world {
     };
 
     camera cam;
+    void handleKeyboardInput(keycode kc, bool pressed) {
+        if (!pressed) {
+            return;
+        }
+
+        if (kc == None) {
+            return;
+        }
+
+        if (pressed) {
+            if (kc == LeftArrow) {
+                vec4 newviewdir = rotate(0.1f, vec3(0, 1, 0)) * vec4(cam.viewdir, 0);
+                cam.viewdir = vec3(newviewdir.x, newviewdir.y, newviewdir.z).normalize();
+            }
+            else if (kc == RightArrow) {
+                vec4 newviewdir = rotate(-0.1f, vec3(0, 1, 0)) * vec4(cam.viewdir, 0);
+                cam.viewdir = vec3(newviewdir.x, newviewdir.y, newviewdir.z).normalize();
+            }
+            else if (kc == UpArrow) {
+                vec4 newviewdir = rotate(0.1f, vec3(1, 0, 0)) * vec4(cam.viewdir, 0);
+                cam.viewdir = vec3(newviewdir.x, newviewdir.y, newviewdir.z).normalize();
+            }
+            else if (kc == DownArrow) {
+                vec4 newviewdir = rotate(-0.1f, vec3(1, 0, 0)) * vec4(cam.viewdir, 0);
+                cam.viewdir = vec3(newviewdir.x, newviewdir.y, newviewdir.z).normalize();
+            }
+        }
+    }
 
     void init(int screenWidth, int screenHeight) {
         cam.pos = vec3(0, 0, 10);
@@ -22,6 +52,8 @@ namespace world {
         cam.fovy = 40.f;
         cam.near = 0.01f;
         cam.far = 20.f;
+
+        keyboard::subscribeToInputEvent(handleKeyboardInput);
     }
 
     void run() {
@@ -34,8 +66,12 @@ namespace world {
 
 
 
-        for (float t = 0;; t+= 0.0001f) {
-
+        for (float t = 0;;) {
+            for (int row = 0; row < 200; row++) {
+                for (int col = 0; col < 320; col++) {
+                    screen::putpixel(col, row, 0, 0, 0);
+                }
+            }
             vec4 ccsVerts[3];
 
             mat4 M = translate(4*sin(0.6* t) - 10, 4*cos(0.9*t), 0) * rotate(t, vec3(0, 1, 1)) * scale(3, 3, 3);
@@ -71,6 +107,26 @@ namespace world {
                 0.5 * (ndcsVerts[2].y + 1) * (T - B) + B,
                 0.5 * (ndcsVerts[2].z + 1)
             );
+
+            vec2 v0 = vec2(dcsVerts[0].x, dcsVerts[0].y);
+            vec2 v1 = vec2(dcsVerts[1].x, dcsVerts[1].y);
+            vec2 v2 = vec2(dcsVerts[2].x, dcsVerts[2].y);
+
+            vec2 tov1 = v1 - v0;
+            vec2 tov2 = v2 - v0;
+            for (int row = 0; row < 200; row++) {
+                for (int col = 0; col < 320; col++) {
+                    vec2 pixelv(col, row);
+
+                    float alpha = ((pixelv - v0) * tov1) / (tov1 * tov1);
+                    float beta = ((pixelv - v0) * tov2) / (tov2 * tov2);
+                    float gamma = 1.f - alpha - beta;
+
+                    if (alpha <= 1.0f && beta <= 1.0f && alpha >= 0.0f && beta >= 0.0f && alpha + beta <= 1.0f && alpha + beta >= 0.0f) {
+                        screen::putpixel(col, row, 255, row, col);
+                    }
+                }
+            }
 
             screen::drawline(dcsVerts[0].x, dcsVerts[0].y, dcsVerts[1].x, dcsVerts[1].y, 255, 0, 0);
             screen::drawline(dcsVerts[0].x, dcsVerts[0].y, dcsVerts[2].x, dcsVerts[2].y, 0, 255, 0);

@@ -16159,24 +16159,10 @@ void draw_logo(void) {
     }
 }
 
-
-
-
 extern uint32_t _linker_end;
 
-extern "C"
-void kernel_main(void) 
-{
-    /* Initialize */
-	setup_gdt32();
-
-    init_memory();
-    // screen::init();
+void run_terminal() {
     terminal::initialize();
-    
-    load_idt();
-    (void) welcomelogo;
-    // terminal::writestring(welcomelogo);
 
     char buf[100];
     const multiboot_info* info = get_multiboot_info();
@@ -16349,11 +16335,35 @@ void kernel_main(void)
     terminal::writestring("Memory end: 0x");
     terminal::writestring(terminal::itoa((int)mem_end, buf, 16));
     terminal::writestring("\n");
+}
+
+extern "C"
+void kernel_main(void) 
+{
+    /* Initialize */
+	setup_gdt32();
+
+    init_memory();
+    
+    load_idt();
+    (void) welcomelogo;
+
+    const multiboot_info* info = get_multiboot_info();
+    if (strncmp((const char*)(info->cmdline), "kernel terminal", 16) == 0) {
+        run_terminal();
+    }
+    else if (strncmp((const char*)(info->cmdline), "kernel video", 13) == 0) {
+        screen::init();
+        world::init(screen::width(), screen::height());
+        world::run();
+    }
+
+    // terminal::writestring(welcomelogo);
+
+
 
 
     // draw_logo();
-    // world::init(screen::width(), screen::height());
-    // world::run();
 
     for(;;) {}  // hang for now
 }

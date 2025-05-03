@@ -10,42 +10,42 @@ struct vec2 {
     vec2( float _x, float _y )
         : x(_x), y(_y) {}
   
-    bool operator == (const vec2& p) {
+    bool operator == (const vec2& p) const {
         return x == p.x && y == p.y;
     }
 
-    bool operator != (const vec2& p) {
+    bool operator != (const vec2& p) const {
         return !(*this == p);
     }
 
-    vec2 operator + (const vec2& p) {
+    vec2 operator + (const vec2& p) const {
         return vec2(x + p.x, y + p.y);
     }
 
-    vec2 operator - (const vec2& p) {
+    vec2 operator - (const vec2& p) const {
         return vec2(x - p.x, y - p.y);
     }
 
     /* dot product */
-    float operator * (const vec2& p) {
+    float operator * (const vec2& p) const {
         return x * p.x + y * p.y;
     }
 
     /* component-wise product */
-    vec2 operator % (const vec2& p) {
+    vec2 operator % (const vec2& p) const {
         return vec2(x * p.x,  y * p.y);
     }
 
-    vec2 normalize() {
+    vec2 normalize() const {
         float invLen = invSqrt(x * x + y * y);
         return vec2(invLen * x, invLen * y);
     }
 
-    float length() {
+    float length() const {
         return sqrt(x * x + y * y);
     }
 
-    float squaredLength() {
+    float squaredLength() const {
         return x * x + y * y;
     }
 };

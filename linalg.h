@@ -105,4 +105,13 @@ mat4 perspective( float fovy, float aspect, float n, float f )
 
   return out;
 }
-    
+
+vec2 proj(const vec2& base, const vec2& v) {
+    vec2 normalizedBase = base.normalize();
+    return (v * normalizedBase) * normalizedBase;
+}
+
+vec3 proj(const vec3& base, const vec3& v) {
+    vec3 normalizedBase = base.normalize();
+    return (v * normalizedBase) * normalizedBase;
+}

@@ -48,6 +48,14 @@ struct vec2 {
     float squaredLength() const {
         return x * x + y * y;
     }
+
+    float& operator[](int index) {
+        return (&x)[index];
+    }
+
+    float operator[](int index) const {
+        return (&x)[index];
+    }
 };
 
 vec2 operator * (float k, vec2 const& p);

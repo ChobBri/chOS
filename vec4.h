@@ -58,6 +58,10 @@ struct vec4 {
     float& operator[](int index) {
         return (&x)[index];
     }
+
+    float operator[](int index) const {
+        return (&x)[index];
+    }
 };
 
 vec4 operator * (float k, const vec4& p);

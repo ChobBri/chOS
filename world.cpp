@@ -4,6 +4,7 @@
 #include "screen.h"
 #include "keyboard.h"
 #include "vec2.h"
+#include "mat2.h"
 namespace world {
         
     struct camera {
@@ -130,25 +131,14 @@ namespace world {
             vec2 v0 = vec2(dcsVerts[0].x, dcsVerts[0].y);
             vec2 v1 = vec2(dcsVerts[1].x, dcsVerts[1].y);
             vec2 v2 = vec2(dcsVerts[2].x, dcsVerts[2].y);
-
-            vec2 basis1 = v1 - v0;
-            vec2 basis2 = v2 - v0;
             for (int row = 0; row < 200; row++) {
                 for (int col = 0; col < 320; col++) {
                     vec2 pixelv(col, row);
-                    vec2 x = pixelv - v0;
-
-                    float alpha = (x.x * basis2.y - x.y * basis2.x) / (basis1.x * basis2.y - basis2.x * basis1.y);
-                    float beta = -(x.x * basis1.y - x.y * basis1.x) / (basis1.x * basis2.y - basis2.x * basis1.y);
-                    // float alpha = (x * basis1) / (basis1 * basis1);
-                    // float beta = (x * basis2) / (basis2 * basis2);
-                    if (alpha >= 0 && beta >= 0 && alpha + beta <= 1) {
+                    if (pointInTriangle(pixelv, v0, v1, v2)) {
                         screen::putpixel(col, row, 255, row, col);
                     }
                 }
             }
-
-
 
             // screen::drawline(dcsVerts[0].x, dcsVerts[0].y, dcsVerts[1].x, dcsVerts[1].y, 255, 0, 0);
             // screen::drawline(dcsVerts[0].x, dcsVerts[0].y, dcsVerts[2].x, dcsVerts[2].y, 0, 255, 0);

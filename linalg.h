@@ -1,6 +1,9 @@
 #pragma once
-#include "mat4.h"
+#include "vec2.h"
 #include "vec3.h"
+#include "vec4.h"
+#include "mat2.h"
+#include "mat4.h"
 #include "math.h"
 
 mat4 translate(float x, float y, float z) {
@@ -114,4 +117,18 @@ vec2 proj(const vec2& base, const vec2& v) {
 vec3 proj(const vec3& base, const vec3& v) {
     vec3 normalizedBase = base.normalize();
     return (v * normalizedBase) * normalizedBase;
+}
+
+bool pointInTriangle(const vec2& point, const vec2& v0, const vec2& v1, const vec2& v2) {
+    const vec2& a = v1 - v0;
+    const vec2& b = v2 - v0;
+
+    const vec2& relativePoint = point - v0;
+
+    vec2 vars = mat2::colSpace(a, b).inverse() * relativePoint;
+    float alpha = vars.x;
+    float beta = vars.y;
+
+    bool inTriangle = alpha >= 0 && beta >= 0 && alpha + beta <= 1;
+    return inTriangle;
 }

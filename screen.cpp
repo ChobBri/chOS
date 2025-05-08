@@ -6,9 +6,10 @@
 namespace screen {
 
 static constexpr uint32_t LINEAR_FRAMEBUFFER_MEMORY_BASE = 0xA0000;
-static int screen_width;
-static int screen_height;
-static uint8_t* framebuffer = (uint8_t *) LINEAR_FRAMEBUFFER_MEMORY_BASE;
+static constexpr int screen_width = 320;
+static constexpr int screen_height = 200;
+static uint8_t* const framebuffer = (uint8_t *) LINEAR_FRAMEBUFFER_MEMORY_BASE;
+static uint8_t backbuffer[screen_width * screen_height];
 
 void init() {
     using namespace vga;
@@ -92,10 +93,6 @@ void init() {
         
         write_color_reg(i, r, g, b);
     }
-
-    screen_width = 320;
-    screen_height = 200;
-    framebuffer = (uint8_t *) LINEAR_FRAMEBUFFER_MEMORY_BASE;
 }
 
 int width() {
@@ -110,7 +107,7 @@ void putpixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     r = r / 32;
     g = g / 64;
     b = b / 32;
-    framebuffer[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
+    backbuffer[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
 }
 
 void drawline(int x0, int y0, int x1, int y1, uint8_t r, uint8_t g, uint8_t b) {
@@ -133,7 +130,7 @@ void drawline(int x0, int y0, int x1, int y1, uint8_t r, uint8_t g, uint8_t b) {
         ystart = max(0, min(y0, y1));
         yend = min(screen_height - 1, max(y0, y1));
         for (int y = ystart; y <= yend; y++) {
-            framebuffer[y * screen_width + x0] = b * (8 * 4)  + g * 8 + r;
+            backbuffer[y * screen_width + x0] = b * (8 * 4)  + g * 8 + r;
         }
         return;
     }
@@ -145,7 +142,7 @@ void drawline(int x0, int y0, int x1, int y1, uint8_t r, uint8_t g, uint8_t b) {
         xstart = max(0, min(x0, x1));
         xend = min(screen_width - 1, max(x0, x1));
         for (int x = xstart; x <= xend; x++) {
-            framebuffer[y0 * screen_width + x] = b * (8 * 4)  + g * 8 + r;
+            backbuffer[y0 * screen_width + x] = b * (8 * 4)  + g * 8 + r;
         }
         return;
     }
@@ -161,7 +158,7 @@ void drawline(int x0, int y0, int x1, int y1, uint8_t r, uint8_t g, uint8_t b) {
             if (y < 0 || y >= screen_height) {
                 continue;
             }
-            framebuffer[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
+            backbuffer[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
         }
     }
     else {
@@ -174,10 +171,17 @@ void drawline(int x0, int y0, int x1, int y1, uint8_t r, uint8_t g, uint8_t b) {
             if (x < 0 || x >= screen_width) {
                 continue;
             }
-            framebuffer[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
+            backbuffer[y * screen_width + x] = b * (8 * 4)  + g * 8 + r;
         }
     }
 
+}
+
+void swapBuffers() {
+    const int pixelNum = screen_width * screen_height;
+    for (int i = 0; i < pixelNum; i++) {
+        framebuffer[i] = backbuffer[i];
+    }
 }
 
 }

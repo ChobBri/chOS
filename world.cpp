@@ -4117,11 +4117,7 @@ unsigned char james[192000] = {
 
         for (;;) {
             doKeyboard();
-            for (int row = 0; row < 200; row++) {
-                for (int col = 0; col < 320; col++) {
-                    screen::putpixel(col, row, 0, 0, 0);
-                }
-            }
+            screen::fillScreen(0, 0, 0);
             for (int i = 0; i < TRIANGLES_NUM; i++) {
                 vec3* triangleVertices = triangleVerticesList[i];
                 vec4 ccsVerts[3];

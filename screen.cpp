@@ -184,4 +184,15 @@ void swapBuffers() {
     }
 }
 
+void fillScreen(int r, int g, int b) {
+    for (int row = 0; row < 200; row++) {
+        for (int col = 0; col < 320; col++) {
+            r = r / 32;
+            g = g / 64;
+            b = b / 32;
+            backbuffer[row * screen_width + col] = b * (8 * 4)  + g * 8 + r;
+        }
+    }
+}
+
 }

@@ -2,6 +2,8 @@
 #include <cstdint>
 #include "vga.h"
 #include "math.h"
+#include "string.h"
+#include "char.h"
 
 namespace screen {
 
@@ -10,6 +12,144 @@ static constexpr int screen_width = 320;
 static constexpr int screen_height = 200;
 static uint8_t* const framebuffer = (uint8_t *) LINEAR_FRAMEBUFFER_MEMORY_BASE;
 static uint8_t backbuffer[screen_width * screen_height];
+
+static constexpr uint8_t charBitmap[256 * 16] = {
+    0b00000000,
+    0b00000000,
+    0b00000000,
+    0b00010000,
+    0b00111000,
+    0b01101100,
+    0b11000110,
+    0b11000110,
+    0b11111110,
+    0b11000110,
+    0b11000110,
+    0b11000110,
+    0b11000110,
+    0b00000000,
+    0b00000000,
+    0b00000000,
+
+    0b00000000,
+    0b00000000,
+    0b00000000,
+    0b11111100,
+    0b11001110,
+    0b11000110,
+    0b11001110,
+    0b11111100,
+    0b11111100,
+    0b11001110,
+    0b11000110,
+    0b11001110,
+    0b11111100,
+    0b00000000,
+    0b00000000,
+    0b00000000,
+
+    0b00000000,
+    0b00000000,
+    0b00000000,
+    0b01111100,
+    0b11101110,
+    0b11000110,
+    0b11000000,
+    0b11000000,
+    0b11000000,
+    0b11000000,
+    0b11000110,
+    0b11101110,
+    0b01111100,
+    0b00000000,
+    0b00000000,
+    0b00000000,
+
+    0b00000000,
+    0b00000000,
+    0b00000000,
+    0b11111100,
+    0b11001110,
+    0b11000110,
+    0b11000110,
+    0b11000110,
+    0b11000110,
+    0b11000110,
+    0b11000110,
+    0b11001110,
+    0b11111100,
+    0b00000000,
+    0b00000000,
+    0b00000000,
+
+    0b00000000,
+    0b00000000,
+    0b00000000,
+    0b11111110,
+    0b11111110,
+    0b11000000,
+    0b11000000,
+    0b11111110,
+    0b11111110,
+    0b11000000,
+    0b11000000,
+    0b11111110,
+    0b11111110,
+    0b00000000,
+    0b00000000,
+    0b00000000,
+
+    0b00000000,
+    0b00000000,
+    0b00000000,
+    0b11111110,
+    0b11111110,
+    0b11000000,
+    0b11000000,
+    0b11111110,
+    0b11111110,
+    0b11000000,
+    0b11000000,
+    0b11000000,
+    0b11000000,
+    0b00000000,
+    0b00000000,
+    0b00000000,
+
+    0b00000000,
+    0b00000000,
+    0b00000000,
+    0b01111100,
+    0b11101110,
+    0b11000110,
+    0b11000000,
+    0b11000000,
+    0b11011110,
+    0b11000110,
+    0b11000110,
+    0b11101110,
+    0b01111100,
+    0b00000000,
+    0b00000000,
+    0b00000000,
+
+    0b00000000,
+    0b00000000,
+    0b00000000,
+    0b11000110,
+    0b11000110,
+    0b11000110,
+    0b11000110,
+    0b11111110,
+    0b11111110,
+    0b11000110,
+    0b11000110,
+    0b11000110,
+    0b11000110,
+    0b00000000,
+    0b00000000,
+    0b00000000,
+};
 
 void init() {
     using namespace vga;
@@ -193,6 +333,35 @@ void fillScreen(int r, int g, int b) {
             backbuffer[row * screen_width + col] = b * (8 * 4)  + g * 8 + r;
         }
     }
+}
+
+void write(const char* data, size_t size, int x, int y) 
+{
+	for (size_t i = 0; i < size; i++) {
+        for (int row = 0; row < 16; row++) {
+            for (int col = 0; col < 8; col++) {
+                int pixelX = x + i * 8 + col;
+                int pixelY = y + row;
+                int bitmapIndex = row;
+                if (isAlpha(data[i])) {
+                    char c = toUpper(data[i]);
+                    bitmapIndex = row + (c - 'A') * 16;
+                }
+                (void) data;
+                if (((charBitmap[bitmapIndex] >> (7 - col)) & 0x1) == 0) {
+                    putpixel(pixelX, pixelY, 0, 0, 0);
+                }
+                else {
+                    putpixel(pixelX, pixelY, 255, 255, 255);
+                }
+            }
+        }
+    }
+}
+
+void writestring(const char* data, int x, int y) 
+{
+	write(data, strlen(data), x, y);
 }
 
 }

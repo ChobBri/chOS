@@ -17,14 +17,15 @@ namespace world {
     };
 
     camera cam;
+    float depthBuffer[320 * 200];
 
     void init(int screenWidth, int screenHeight) {
         cam.pos = vec3(0, 0, 10);
         cam.viewdir = vec3(0, 0, -1);
         cam.aspect = (float) screenWidth / screenHeight;
         cam.fovy = 90.f;
-        cam.near = 0.01f;
-        cam.far = 20.f;
+        cam.near = 1.0f;
+        cam.far = 40.f;
     }
 
 unsigned char james[192000] = {
@@ -4068,40 +4069,40 @@ unsigned char james[192000] = {
 
         auto doKeyboard = [](){
             if (keyboard::isKeyPressed(LeftArrow)) {
-                vec4 newviewdir = rotate(0.05f, vec3(0, 1, 0)) * vec4(cam.viewdir, 0);
-                cam.viewdir = vec3(newviewdir.x, newviewdir.y, newviewdir.z).normalize();
+                vec4 newviewdir = rotate(0.05f, vec3::up()) * vec4(cam.viewdir, 0);
+                cam.viewdir = newviewdir.xyz().normalize();
             }
             if (keyboard::isKeyPressed(RightArrow)) {
-                vec4 newviewdir = rotate(-0.05f, vec3(0, 1, 0)) * vec4(cam.viewdir, 0);
-                cam.viewdir = vec3(newviewdir.x, newviewdir.y, newviewdir.z).normalize();
+                vec4 newviewdir = rotate(-0.05f, vec3::up()) * vec4(cam.viewdir, 0);
+                cam.viewdir = newviewdir.xyz().normalize();
             }
             if (keyboard::isKeyPressed(UpArrow)) {
-                vec4 newviewdir = rotate(0.05f, cam.viewdir ^ vec3(0, 1, 0)) * vec4(cam.viewdir, 0);
-                cam.viewdir = vec3(newviewdir.x, newviewdir.y, newviewdir.z).normalize();
+                vec4 newviewdir = rotate(0.05f, cam.viewdir ^ vec3::up()) * vec4(cam.viewdir, 0);
+                cam.viewdir = newviewdir.xyz().normalize();
             }
             if (keyboard::isKeyPressed(DownArrow)) {
-                vec4 newviewdir = rotate(-0.05f, cam.viewdir ^ vec3(0, 1, 0)) * vec4(cam.viewdir, 0);
-                cam.viewdir = vec3(newviewdir.x, newviewdir.y, newviewdir.z).normalize();
+                vec4 newviewdir = rotate(-0.05f, cam.viewdir ^ vec3::up()) * vec4(cam.viewdir, 0);
+                cam.viewdir = newviewdir.xyz().normalize();
             }
             if (keyboard::isKeyPressed(KeyA)) {
-                vec4 movedir = rotate(atan2(cam.viewdir.x, cam.viewdir.z), vec3(0, 1, 0)) * vec4(1, 0, 0, 0);
+                vec4 movedir = rotate(atan2(cam.viewdir.x, cam.viewdir.z), vec3::up()) * vec4(1, 0, 0, 0);
                 movedir = 0.5f * movedir;
-                cam.pos = cam.pos + vec3(movedir.x, movedir.y, movedir.z);
+                cam.pos = cam.pos + movedir.xyz();
             }
             if (keyboard::isKeyPressed(KeyD)) {
-                vec4 movedir = rotate(atan2(cam.viewdir.x, cam.viewdir.z), vec3(0, 1, 0)) * vec4(-1, 0, 0, 0);
+                vec4 movedir = rotate(atan2(cam.viewdir.x, cam.viewdir.z), vec3::up()) * vec4(-1, 0, 0, 0);
                 movedir = 0.5f * movedir;
-                cam.pos = cam.pos + vec3(movedir.x, movedir.y, movedir.z);
+                cam.pos = cam.pos + movedir.xyz();
             }
             if (keyboard::isKeyPressed(KeyW)) {
-                vec4 movedir = rotate(atan2(cam.viewdir.x, cam.viewdir.z), vec3(0, 1, 0)) * vec4(0, 0, 1, 0);
+                vec4 movedir = rotate(atan2(cam.viewdir.x, cam.viewdir.z), vec3::up()) * vec4(0, 0, 1, 0);
                 movedir = 0.5f * movedir;
-                cam.pos = cam.pos + vec3(movedir.x, movedir.y, movedir.z);
+                cam.pos = cam.pos + movedir.xyz();
             }
             if (keyboard::isKeyPressed(KeyS)) {
-                vec4 movedir = rotate(atan2(cam.viewdir.x, cam.viewdir.z), vec3(0, 1, 0)) * vec4(0, 0, -1, 0);
+                vec4 movedir = rotate(atan2(cam.viewdir.x, cam.viewdir.z), vec3::up()) * vec4(0, 0, -1, 0);
                 movedir = 0.5f * movedir;
-                cam.pos = cam.pos + vec3(movedir.x, movedir.y, movedir.z);
+                cam.pos = cam.pos + movedir.xyz();
             }
             if (keyboard::isKeyPressed(KeyQ)) {
                 cam.fovy -= 1.f;
@@ -4118,12 +4119,18 @@ unsigned char james[192000] = {
         for (;;) {
             doKeyboard();
             screen::fillScreen(0, 0, 0);
+            for (int row = 0; row < 200; row++) {
+                for (int col = 0; col < 320; col++) {
+                    int index = row * 320 + col;
+                    depthBuffer[index] = 0xFFFFFFFF;
+                }
+            }
             for (int i = 0; i < TRIANGLES_NUM; i++) {
                 vec3* triangleVertices = triangleVerticesList[i];
                 vec4 ccsVerts[3];
 
                 mat4 M = scale(3,3,3);
-                mat4 V = viewing(cam.pos, cam.pos + cam.viewdir, vec3(0, 1, 0));
+                mat4 V = viewing(cam.pos, cam.pos + cam.viewdir, vec3::up());
                 mat4 P = perspective(cam.fovy, cam.aspect, cam.near, cam.far);
 
                 ccsVerts[0] = P * V * M * vec4(triangleVertices[0], 1);
@@ -4131,34 +4138,22 @@ unsigned char james[192000] = {
                 ccsVerts[2] = P * V * M * vec4(triangleVertices[2], 1);
 
                 vec3 ndcsVerts[3];
-                ndcsVerts[0] = (1 / ccsVerts[0].w) * vec3(ccsVerts[0].x, ccsVerts[0].y, ccsVerts[0].z);
-                ndcsVerts[1] = (1 / ccsVerts[1].w) * vec3(ccsVerts[1].x, ccsVerts[1].y, ccsVerts[1].z);
-                ndcsVerts[2] = (1 / ccsVerts[2].w) * vec3(ccsVerts[2].x, ccsVerts[2].y, ccsVerts[2].z);
+                ndcsVerts[0] = ccsVerts[0].perspDiv();
+                ndcsVerts[1] = ccsVerts[1].perspDiv();
+                ndcsVerts[2] = ccsVerts[2].perspDiv();
 
                 float R = screen::width();
                 float L = 0;
                 float T = 0;
                 float B = screen::height();
                 vec3 dcsVerts[3];
-                dcsVerts[0] = vec3(
-                    0.5 * (ndcsVerts[0].x + 1) * (R - L) + L,
-                    0.5 * (ndcsVerts[0].y + 1) * (T - B) + B,
-                    0.5 * (ndcsVerts[0].z + 1)
-                );
-                dcsVerts[1] = vec3(
-                    0.5 * (ndcsVerts[1].x + 1) * (R - L) + L,
-                    0.5 * (ndcsVerts[1].y + 1) * (T - B) + B,
-                    0.5 * (ndcsVerts[1].z + 1)
-                );
-                dcsVerts[2] = vec3(
-                    0.5 * (ndcsVerts[2].x + 1) * (R - L) + L,
-                    0.5 * (ndcsVerts[2].y + 1) * (T - B) + B,
-                    0.5 * (ndcsVerts[2].z + 1)
-                );
+                dcsVerts[0] = viewport(ndcsVerts[0], L, R, B, T);
+                dcsVerts[1] = viewport(ndcsVerts[1], L, R, B, T);
+                dcsVerts[2] = viewport(ndcsVerts[2], L, R, B, T);
 
-                vec2 v0 = vec2(dcsVerts[0].x, dcsVerts[0].y);
-                vec2 v1 = vec2(dcsVerts[1].x, dcsVerts[1].y);
-                vec2 v2 = vec2(dcsVerts[2].x, dcsVerts[2].y);
+                vec2 v0 = dcsVerts[0].xy();
+                vec2 v1 = dcsVerts[1].xy();
+                vec2 v2 = dcsVerts[2].xy();
 
                 int rowStart = max(0.0f, min(min(v0.y, v1.y), v2.y));
                 int rowEnd = min((float)screen::height(), max(max(v0.y, v1.y), v2.y));
@@ -4167,20 +4162,26 @@ unsigned char james[192000] = {
                 for (int row = rowStart; row < rowEnd; row++) {
                     for (int col = colStart; col < colEnd; col++) {
                         vec2 pixelv(col, row);
-                        if (pointInTriangle(pixelv, v0, v1, v2)) {
+                        vec3 intersectPoint = rayTrianglePlaneIntersectPoint(vec3(col, row, 0), vec3::forward(), dcsVerts[0], dcsVerts[1], dcsVerts[2]);
+                        if (pointInTriangle(pixelv, v0, v1, v2) && intersectPoint.z >= 0) {
+                            depthBuffer[row * 320 + col] = intersectPoint.z;
                             int index = 3 * (row * screen::width() + col);
-                            int r = james[index];
-                            int g = james[index + 1];
-                            int b = james[index + 2];
+                            int r = james[index] + i * 50;
+                            int g = james[index + 1] + i * 50;
+                            int b = james[index + 2] + i * 50;
                             screen::putpixel(col, row, r, g, b);
+                            if (intersectPoint.z > 1) {
+                                screen::putpixel(col, row, 0, 0, 255);
+                            }
+                            // screen::drawline(dcsVerts[0].x, dcsVerts[0].y, dcsVerts[1].x, dcsVerts[1].y, 255, 0, 0);
+                            // screen::drawline(dcsVerts[0].x, dcsVerts[0].y, dcsVerts[2].x, dcsVerts[2].y, 0, 255, 0);
+                            // screen::drawline(dcsVerts[2].x, dcsVerts[2].y, dcsVerts[1].x, dcsVerts[1].y, 0, 0, 255);
                         }
                     }
                 }
 
-                screen::drawline(dcsVerts[0].x, dcsVerts[0].y, dcsVerts[1].x, dcsVerts[1].y, 255, 0, 0);
-                screen::drawline(dcsVerts[0].x, dcsVerts[0].y, dcsVerts[2].x, dcsVerts[2].y, 0, 255, 0);
-                screen::drawline(dcsVerts[2].x, dcsVerts[2].y, dcsVerts[1].x, dcsVerts[1].y, 0, 0, 255);
             }
+            screen::writestring("abcdefghijklmnopqrstuvwxyz", 10, 10);
             screen::swapBuffers();
         }
 

@@ -95,8 +95,7 @@ mat4 projection(float l, float r, float b, float t, float n, float f) {
     return P;
 }
 
-mat4 perspective( float fovy, float aspect, float n, float f )
-{
+mat4 perspective(float fovy, float aspect, float n, float f) {
   mat4 out;
 
   float s = 1 / atan2( fovy, 2.0 );
@@ -107,6 +106,14 @@ mat4 perspective( float fovy, float aspect, float n, float f )
   out.rows[3] = vec4(         0,         0,          -1,           0 );
 
   return out;
+}
+
+vec3 viewport(const vec3& point, float L, float R, float B, float T) {
+    return vec3(
+        0.5f * (point.x + 1) * (R - L) + L,
+        0.5f * (point.y + 1) * (T - B) + B,
+        0.5f * (point.z + 1)
+    );
 }
 
 vec2 proj(const vec2& base, const vec2& v) {
@@ -131,4 +138,13 @@ bool pointInTriangle(const vec2& point, const vec2& v0, const vec2& v1, const ve
 
     bool inTriangle = alpha >= 0 && beta >= 0 && alpha + beta <= 1;
     return inTriangle;
+}
+
+vec3 rayTrianglePlaneIntersectPoint(const vec3& origin, const vec3& dir, const vec3& v0, const vec3& v1, const vec3& v2) {
+    const vec3 dirNorm = dir.normalize();
+    const vec3 toV1 = v1 - v0;
+    const vec3 toV2 = v2 - v0;
+    const vec3 n = toV1 ^ toV2;
+    const float t = (n * v0 - dirNorm * origin) / (n * dirNorm);
+    return origin + t * dirNorm;
 }

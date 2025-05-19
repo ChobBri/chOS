@@ -55,6 +55,14 @@ struct vec4 {
         return x * x + y * y + z * z + w * w;
     }
 
+    vec3 xyz() const {
+        return vec3(x, y, z);
+    }
+
+    vec3 perspDiv() const {
+        return vec3(x / w, y / w, z / w);
+    }
+
     float& operator[](int index) {
         return (&x)[index];
     }

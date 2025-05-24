@@ -96,10 +96,14 @@ void handleTimerInterrupt(){
     // terminal_putchar('\n');
 }
 
+void playSound();
 void handleKeyboardInterrupt(){
     uint8_t scancode = inb(0x60);
     // terminal::putchar(scancode);
     keyboard::handleScanCode(scancode);
+    if (keyboard::isKeyPressed(keycode::Space)) {
+        playSound();
+    }
 }
 
 extern "C"
@@ -16157,6 +16161,59 @@ void draw_logo(void) {
             screen::putpixel(col, row, r, g, b);
         }
     }
+}
+
+static constexpr uint16_t SOUND_LEN = 0x4000;
+static uint8_t soundData[SOUND_LEN] = {}; 
+
+void playSound() {
+    cli();
+    for (int i = 0; i < SOUND_LEN; i++) {
+        int factor = i / (SOUND_LEN / 8) + 2;
+        soundData[i] = (i * factor) % 256;
+    }
+    static constexpr uint16_t DSP_RESET_PORT = 0x226;
+    static constexpr uint16_t DSP_WRITE_PORT = 0x22C;
+    static constexpr uint8_t DSP_WRITE_CMD_SPEAKER_ON = 0xD1;
+    static constexpr uint8_t DSP_WRITE_CMD_SET_TIME_CONST = 0x40;
+    static constexpr uint16_t ISA_DMA_SINGLE_CHANNEL_MASK_REG = 0x0A;
+    static constexpr uint16_t ISA_DMA_MODE_REG = 0x0B;
+    static constexpr uint16_t ISA_DMA_FLIP_FLOP_RESET_REG = 0x0C;
+    static constexpr uint16_t ISA_DMA_CHAN1_PAGE_ADDR_REG = 0x83;
+    static constexpr uint16_t ISA_DMA_START_ADDR_CHAN1o5_REG = 0x02;
+    static constexpr uint16_t ISA_DMA_COUNT_CHAN1o5_REG = 0x03;
+    /* Reset DSP */
+    outb(DSP_RESET_PORT, 1);
+    // Wait 3 microseconds ish
+    for (int i = 0; i < 10000; i++) {
+        terminal::writestring("");
+    }
+    outb(DSP_RESET_PORT, 0);
+
+    /* Turn speaker on */
+    outb(DSP_WRITE_PORT, DSP_WRITE_CMD_SPEAKER_ON);
+
+    static constexpr uint8_t CHANNEL_NUMBER = 1;
+    static constexpr uint8_t CHANNEL_MASK_BIT = 0x04;
+
+    outb(ISA_DMA_SINGLE_CHANNEL_MASK_REG, CHANNEL_NUMBER | CHANNEL_MASK_BIT);
+    outb(ISA_DMA_FLIP_FLOP_RESET_REG, 0xFF);  // I believe value is arbitrary
+    static constexpr uint8_t SINGLE_MODE = 0x48;
+    outb(ISA_DMA_MODE_REG, SINGLE_MODE + CHANNEL_NUMBER);
+    outb(ISA_DMA_CHAN1_PAGE_ADDR_REG, ((uint32_t)soundData >> 16) & 0xFF);
+    outb(ISA_DMA_START_ADDR_CHAN1o5_REG, ((uint32_t)soundData >> 0) & 0xFF);
+    outb(ISA_DMA_START_ADDR_CHAN1o5_REG, ((uint32_t)soundData >> 8) & 0xFF);
+    outb(ISA_DMA_COUNT_CHAN1o5_REG, (SOUND_LEN - 1) & 0xFF);
+    outb(ISA_DMA_COUNT_CHAN1o5_REG, ((SOUND_LEN - 1) >> 8) & 0xFF);
+    outb(ISA_DMA_SINGLE_CHANNEL_MASK_REG, CHANNEL_NUMBER);
+    
+    outb(DSP_WRITE_PORT, DSP_WRITE_CMD_SET_TIME_CONST);
+    outb(DSP_WRITE_PORT, 165);
+    outb(DSP_WRITE_PORT, 0xC0);  // 8 bit
+    outb(DSP_WRITE_PORT, 0x00);  // mono
+    outb(DSP_WRITE_PORT, (SOUND_LEN - 1) & 0xFF);
+    outb(DSP_WRITE_PORT, ((SOUND_LEN - 1) >> 8) & 0xFF);
+    sti();
 }
 
 extern uint32_t _linker_end;

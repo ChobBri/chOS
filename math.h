@@ -4,6 +4,9 @@ static constexpr float PI = 3.1415926535f;
 static constexpr float TAU = 2 * PI;
 float sqrt(float z);
 float invSqrt(float x);
+float exp(float x);
+float ln(float x);
+float pow(float b, float e);
 
 int floor(float x);
 int ceil(float x);

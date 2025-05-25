@@ -33,6 +33,33 @@ float invSqrt(float x) {
     return u.x;
 }
 
+float exp(float x) {
+    float result = 1.0f;
+    const int iterationNum = 10;  // increase for accuracy
+    float xExp = 1;
+    int factorial = 1;
+    for (int i = 1; i < iterationNum; i++) {
+        factorial *= i;
+        xExp *= x;
+        result += xExp / factorial;
+    }
+    return result;
+}
+
+float ln(float x) {
+    const int iterationNum = 5;
+    float result = 0.0f;
+    for (int i = 1; i <= iterationNum; i++) {
+        float e = exp(result);
+        result = result + 2 * (x - e) / (x + e);
+    }
+    return result;
+}
+
+float pow(float b, float e) {
+    return exp(ln(b) * e);
+}
+
 int floor(float x) {
     if (x >= 0.0f) {
         return (int) x;

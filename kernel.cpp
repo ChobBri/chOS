@@ -13,6 +13,7 @@
 #include "world.h"
 #include "multiboot.h"
 #include "memory.h"
+#include "math.h"
 static constexpr int IDT_SIZE = 256;
 
 typedef struct {
@@ -16168,9 +16169,14 @@ static uint8_t soundData[SOUND_LEN] = {};
 
 void playSound() {
     cli();
+
     for (int i = 0; i < SOUND_LEN; i++) {
-        int factor = i / (SOUND_LEN / 8) + 2;
-        soundData[i] = (i * factor) % 256;
+        float hz;
+        float A4Offset = i * 24 / SOUND_LEN - 12;
+        hz = pow(2, A4Offset / 12) * 440;
+
+        float x = (float)i / 10989 * TAU * hz; 
+        soundData[i] = sin(x) + 1 * 256;
     }
     static constexpr uint16_t DSP_RESET_PORT = 0x226;
     static constexpr uint16_t DSP_WRITE_PORT = 0x22C;

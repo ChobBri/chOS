@@ -16164,19 +16164,168 @@ void draw_logo(void) {
     }
 }
 
-static constexpr uint16_t SOUND_LEN = 0x4000;
+static constexpr uint16_t SOUND_LEN = 0xFFFF;
 static uint8_t soundData[SOUND_LEN] = {}; 
+
+/* note 0 = A */
+static constexpr int NOTE_A = 0;
+static constexpr int NOTE_AS = 1;
+static constexpr int NOTE_BF = 1;
+static constexpr int NOTE_B = 2;
+static constexpr int NOTE_CF = 2;
+static constexpr int NOTE_BS = 3;
+static constexpr int NOTE_C = 3;
+static constexpr int NOTE_CS = 4;
+static constexpr int NOTE_D = 5;
+static constexpr int NOTE_DS = 6;
+static constexpr int NOTE_E = 7;
+static constexpr int NOTE_F = 8;
+static constexpr int NOTE_FS = 9;
+static constexpr int NOTE_G = 10;
+static constexpr int NOTE_GS = 11;
+float getHzNote(int note, int octave) {
+    float semitones = (float)note + (octave - 4) * 12;
+    float hz = pow(2, semitones / 12) * 440;
+    return hz;
+}
+float getHzA4Centered(float semitoneOffset) {
+    float hz = pow(2, semitoneOffset / 12) * 440;
+    return hz;
+}
 
 void playSound() {
     cli();
 
+    float volume = 1.0f;
+    float hz = 0.0f;
     for (int i = 0; i < SOUND_LEN; i++) {
-        float hz;
-        float A4Offset = i * 24 / SOUND_LEN - 12;
-        hz = pow(2, A4Offset / 12) * 440;
-
+        int div = SOUND_LEN / 256;
+        // static constexpr int QUARTER = 16;
+        if (i < div) {
+            volume = 1.0f;
+            hz = getHzNote(NOTE_D, 3);
+        }
+        else if (i < div * 2) {
+            hz = getHzNote(NOTE_B, 4);
+        }
+        else if (i < div * 8) {
+            hz = getHzNote(NOTE_G, 4);
+        }
+        else if (i < div * 16) {
+            volume = 0.0f;
+        }
+        else if (i < div * 40) {
+            volume = 1.0f;
+            hz = getHzNote(NOTE_G, 4);
+        }
+        else if (i < div * 44) {
+            hz = getHzNote(NOTE_FS, 4);
+        }
+        else if (i < div * 48) {
+            hz = getHzNote(NOTE_G, 4);
+        }
+        else if (i < div * 52) {
+            hz = getHzNote(NOTE_FS, 4);
+        }
+        else if (i < div * 56) {
+            hz = getHzNote(NOTE_G, 4);
+        }
+        else if (i < div * 60) {
+            hz = getHzNote(NOTE_FS, 4);
+        }
+        else if (i < div * 64) {
+            hz = getHzNote(NOTE_G, 4);
+        }
+        else if (i < div * 66) {
+            hz = getHzNote(NOTE_D, 3);
+        }
+        else if (i < div * 72) {
+            hz = getHzNote(NOTE_D, 4);
+        }
+        else if (i < div * 80) {
+            volume = 0.0f;
+        }
+        else if (i < div * 104) {
+            volume = 1.0f;
+            hz = getHzNote(NOTE_D, 4);
+        }
+        else if (i < div * 108) {
+            hz = getHzNote(NOTE_CS, 4);
+        }
+        else if (i < div * 112) {
+            hz = getHzNote(NOTE_D, 4);
+        }
+        else if (i < div * 116) {
+            hz = getHzNote(NOTE_CS, 4);
+        }
+        else if (i < div * 120) {
+            hz = getHzNote(NOTE_D, 4);
+        }
+        else if (i < div * 124) {
+            hz = getHzNote(NOTE_CS, 4);
+        }
+        else if (i < div * 128) {
+            hz = getHzNote(NOTE_D, 4);
+        }
+        else if (i < div * 130) {
+            hz = getHzNote(NOTE_G, 2);
+        }
+        else if (i < div * 132) {
+            hz = getHzNote(NOTE_D, 4);
+        }
+        else if (i < div * 138) {
+            hz = getHzNote(NOTE_B, 4);
+        }
+        else if (i < div * 146) {
+            volume = 0.0f;
+        }
+        else if (i < div * 170) {
+            volume = 1.0f;
+            hz = getHzNote(NOTE_B, 4);
+        }
+        else if (i < div * 174) {
+            hz = getHzNote(NOTE_C, 4);
+        }
+        else if (i < div * 175) {
+            hz = getHzNote(NOTE_D, 4);
+        }
+        else if (i < div * 176) {
+            hz = getHzNote(NOTE_C, 4);
+        }
+        else if (i < div * 177) {
+            hz = getHzNote(NOTE_D, 4);
+        }
+        else if (i < div * 178) {
+            hz = getHzNote(NOTE_C, 4);
+        }
+        else if (i < div * 182) {
+            hz = getHzNote(NOTE_D, 4);
+        }
+        else if (i < div * 186) {
+            volume = 0.0f;
+        }
+        else if (i < div * 190) {
+            volume = 1.0f;
+            hz = getHzNote(NOTE_E, 4);
+        }
+        else if (i < div * 194) {
+            volume = 0.0f;
+        }
+        else if (i < div * 202) {
+            volume = 1.0f;
+            hz = getHzNote(NOTE_G, 3);
+        }
+        else if (i < div * 210) {
+            hz = getHzNote(NOTE_FS, 3);
+        } 
+        else if (i < div * 228) {
+            hz = getHzNote(NOTE_FS, 3);
+        } 
+        else {
+            volume = 0.0f;
+        }
         float x = (float)i / 10989 * TAU * hz; 
-        soundData[i] = sin(x) + 1 * 256;
+        soundData[i] = volume * sin(x) + 1 * 256;
     }
     static constexpr uint16_t DSP_RESET_PORT = 0x226;
     static constexpr uint16_t DSP_WRITE_PORT = 0x22C;
@@ -16191,9 +16340,6 @@ void playSound() {
     /* Reset DSP */
     outb(DSP_RESET_PORT, 1);
     // Wait 3 microseconds ish
-    for (int i = 0; i < 10000; i++) {
-        terminal::writestring("");
-    }
     outb(DSP_RESET_PORT, 0);
 
     /* Turn speaker on */

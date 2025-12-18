@@ -377,15 +377,113 @@ void output_multiboot_info() {
     terminal::writestring("\n");
 }
 
+/* x86 registers that are callee-saved */
+struct context_t {
+    uint32_t ebx;  // Base
+    uint32_t esi;  // Source
+    uint32_t edi;  // Destination
+    uint32_t ebp;  // Stack Base Pointer
+    uint32_t eip;  // Instruction Pointer
+};
+
+extern "C"
+void context_switch(context_t**, context_t*);
+bool isproc1 = true;
+context_t* ctx1;
+context_t* ctx2;
+void ctx_switch()
+{
+    if (isproc1)
+    {
+        isproc1 = false;
+        context_switch(&ctx1, ctx2);
+    }
+    else 
+    {
+        isproc1 = true;
+        context_switch(&ctx2, ctx1);
+    }
+}
+uint8_t proc[2][4096];
+uint32_t global = 9;
+void proc1()
+{
+    while (global != 1)
+    {
+        if (global % 2 == 0)
+        {
+            terminal::writestring("Even Proc: ");
+            terminal::writestring(terminal::itoa(global, terminal::volatile_itoa_buf, 10));
+            global /= 2;
+            terminal::writestring(" -> ");
+            terminal::writestring(terminal::itoa(global, terminal::volatile_itoa_buf, 10));
+            terminal::writestring("\n");
+        }
+        else
+        {
+            ctx_switch();
+        }
+    }
+    terminal::writestring("We done :)");
+    for (;;) {}
+}
+
+void proc2()
+{
+    while (global != 1)
+    {
+        if (global % 2 != 0)
+        {
+            terminal::writestring("Odd Proc: ");
+            terminal::writestring(terminal::itoa(global, terminal::volatile_itoa_buf, 10));
+            global = 3 * global + 1;
+            terminal::writestring(" -> ");
+            terminal::writestring(terminal::itoa(global, terminal::volatile_itoa_buf, 10));
+            terminal::writestring("\n");
+        }
+        else
+        {
+            ctx_switch();
+        }
+    }
+    for (;;) {}
+}
+
 extern "C"
 void kernel_main(void) 
 {
     /* Initialize */
 	setup_gdt32();
-
-    init_memory();
-    
     load_idt();
+    terminal::initialize();
+    terminal::writestring(welcomelogo);
+    init_memory();
+    uint8_t* sp1 = proc[0] + 4096;
+    uint8_t* sp2 = proc[1] + 4096;
+
+    sp1 -= 4;
+    sp2 -= 4;
+
+    sp1 -= sizeof(context_t);
+    sp2 -= sizeof(context_t);
+
+    ctx1 = (context_t*) sp1;
+    ctx2 = (context_t*) sp2;
+
+    ctx1->ebp = 0;
+    ctx1->ebx = 0;
+    ctx1->edi = 0;
+    ctx1->esi = 0;
+    ctx1->eip = (uint32_t) proc1;
+
+    ctx2->ebp = 0;
+    ctx2->ebx = 0;
+    ctx2->edi = 0;
+    ctx2->esi = 0;
+    ctx2->eip = (uint32_t) proc2;
+
+    proc1();
+    for (;;){}
 
     const multiboot_info* info = get_multiboot_info();
     if (strncmp((const char*)(info->cmdline), "kernel terminal", 16) == 0) {

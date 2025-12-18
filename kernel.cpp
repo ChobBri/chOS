@@ -16218,9 +16218,7 @@ void playSound() {
 
 extern uint32_t _linker_end;
 
-void run_terminal() {
-    terminal::initialize();
-
+void output_multiboot_info() {
     char buf[100];
     const multiboot_info* info = get_multiboot_info();
 
@@ -16407,20 +16405,17 @@ void kernel_main(void)
 
     const multiboot_info* info = get_multiboot_info();
     if (strncmp((const char*)(info->cmdline), "kernel terminal", 16) == 0) {
-        run_terminal();
+        terminal::initialize();
+        output_multiboot_info();
+        terminal::writestring(welcomelogo);
     }
     else if (strncmp((const char*)(info->cmdline), "kernel video", 13) == 0) {
         screen::init();
         world::init(screen::width(), screen::height());
         world::run();
+        // draw_logo();
     }
 
-    // terminal::writestring(welcomelogo);
-
-
-
-
-    // draw_logo();
 
     for(;;) {}  // hang for now
 }

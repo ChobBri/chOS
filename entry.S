@@ -1,3 +1,9 @@
+/*
+Hello, welcome to chOS.
+
+The chOS kernel starts executing in this file.
+*/
+
 /* Declare constants for the multiboot header. */
 .set ALIGN,    1<<0             /* align loaded modules on page boundaries */
 .set MEMINFO,  1<<1             /* provide memory map */
@@ -121,7 +127,6 @@ This is useful when debugging or when you implement call tracing.
 */
 .size _start, . - _start
 
-.code32
 /* First arg: address of gdtr */
 .global load_gdt
 load_gdt:

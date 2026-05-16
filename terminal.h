@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 namespace terminal {
+extern char volatile_itoa_buf[100];
 char* itoa( int value, char* str, int base );
 void initialize(void);
 void writestring(const char* data);

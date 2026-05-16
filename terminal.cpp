@@ -61,7 +61,7 @@ void init_mode3() {
     vga::write_crt_ctrl_reg(0x17, 0xA3);
 }
 
-
+char volatile_itoa_buf[100];
 /* base between 2 and 36 */
 char* itoa( int value, char* str, int base )
 {
